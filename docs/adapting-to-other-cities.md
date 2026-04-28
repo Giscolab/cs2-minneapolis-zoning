@@ -1,122 +1,140 @@
-# Adapting This Pipeline to Other Cities
+# Adapter l'extraction à une autre ville
 
-This pipeline is city-agnostic. Any city with reasonable OpenStreetMap coverage can be processed in under 20 minutes. Here is a 5-step guide.
+Le pipeline est générique : toute ville disposant d'une couverture OpenStreetMap correcte peut être extraite avec une boîte géographique adaptée.
+
+Le format attendu par `extract_zoning.py` et par Overpass QL est toujours :
+
+```text
+sud,ouest,nord,est
+```
+
+Soit, en coordonnées :
+
+```text
+latitude_min,longitude_min,latitude_max,longitude_max
+```
 
 ---
 
-## Step 1: Get Your City's Bounding Box
+## Étape 1 — Trouver la boîte géographique
 
-You need four coordinates in `south,west,north,east` format.
+### Option A — Nominatim
 
-**Option A — Nominatim (easiest):**
+Recherchez la ville sur [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org/), ou utilisez l'API :
 
-Search your city on [nominatim.openstreetmap.org](https://nominatim.openstreetmap.org/). The search result page shows a bounding box at the bottom, or you can use the API:
-
-```
-https://nominatim.openstreetmap.org/search?q=Chicago,IL,USA&format=json&limit=1
+```text
+https://nominatim.openstreetmap.org/search?q=Paris,France&format=json&limit=1
 ```
 
-The response includes `"boundingbox": ["south", "north", "west", "east"]` — reorder to `south,west,north,east` for Overpass QL.
+La réponse contient souvent un champ `boundingbox` au format :
 
-**Option B — bbox-mcp-server (if you use AI tools):**
+```json
+["south", "north", "west", "east"]
+```
 
-If you have bbox-mcp-server installed, ask your AI assistant:
-> "What is the bounding box for Chicago, IL?"
+Réordonnez-le en `south,west,north,east` avant de le passer au script.
 
-See [bbox-mcp-server.md](bbox-mcp-server.md) for setup instructions.
+### Option B — bbox-mcp-server
 
-**Option C — Manual from a map:**
+Si vous utilisez un assistant compatible MCP et que `bbox-mcp-server` est installé, demandez par exemple :
 
-Go to [bboxfinder.com](http://bboxfinder.com/) and draw a rectangle over your city. The coordinates are shown at the bottom in the correct format.
+```text
+Quelle est la bounding box de Lyon, France ?
+```
 
-**Examples:**
+Voir [bbox-mcp-server.md](bbox-mcp-server.md) pour le contexte d'utilisation.
 
-| City | Bounding Box |
-|------|--------------|
-| Minneapolis, MN | `44.86,-93.38,45.05,-93.17` |
-| Chicago, IL | `41.64,-87.94,42.02,-87.52` |
-| Portland, OR | `45.43,-122.84,45.65,-122.47` |
-| Austin, TX | `30.10,-97.97,30.52,-97.56` |
-| Denver, CO | `39.61,-105.11,39.91,-104.60` |
+### Option C — Outil cartographique manuel
+
+Vous pouvez aussi dessiner une zone sur un outil comme [bboxfinder.com](http://bboxfinder.com/).
+
+Vérifiez toujours l'ordre des coordonnées avant l'extraction : beaucoup d'outils SIG affichent `ouest,sud,est,nord`, alors que ce projet attend `sud,ouest,nord,est`.
+
+### Exemples
+
+| Ville | BBOX au format `sud,ouest,nord,est` |
+|:------|:------------------------------------|
+| Paris | `48.766147,2.161560,48.945053,2.485657` |
+| Minneapolis | `44.86,-93.38,45.05,-93.17` |
+| Chicago | `41.64,-87.94,42.02,-87.52` |
+| Portland | `45.43,-122.84,45.65,-122.47` |
+| Austin | `30.10,-97.97,30.52,-97.56` |
 
 ---
 
-## Step 2: Update the Bounding Box in the Code
+## Étape 2 — Lancer l'extraction
 
-Edit `src/cs2_zones.py` and replace the default bbox:
-
-```python
-# Before
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
-
-# After (example: Chicago)
-MINNEAPOLIS_BBOX = "41.64,-87.94,42.02,-87.52"
-```
-
-Or pass it as a CLI argument without editing the file:
+Depuis le dossier `src` :
 
 ```bash
-uv run extract_zoning.py --bbox "41.64,-87.94,42.02,-87.52"
+python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"
 ```
 
----
-
-## Step 3: Run the Extraction
+Avec `uv` :
 
 ```bash
-cd src
-uv run extract_zoning.py
+uv run extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"
 ```
 
-The script will:
-1. Download `building:levels` data to build the density index (~30s)
-2. Download 7 zoning categories sequentially (~10-15 min total)
-3. Classify all polygons
-4. Write `../visualizer/datos_zonificacion.js`
-
-Expected output size: 2-8 MB depending on city size and OSM coverage.
+Il n'est pas nécessaire de modifier le code pour changer de ville. Les constantes `EXAMPLE_BBOX_PARIS` et `EXAMPLE_BBOX_MINNEAPOLIS` dans `src/cs2_zones.py` ne sont que des exemples.
 
 ---
 
-## Step 4: Open the Visualizer
+## Étape 3 — Comprendre ce que fait le script
 
-Open `visualizer/index.html` in any modern browser. The map will center automatically on the data extent of your new city.
+Le script :
 
-If the map appears blank, check the browser console (F12) for errors. Most likely cause: the output file path doesn't match what index.html expects.
+1. télécharge les bâtiments avec `building:levels` pour construire un index de densité ;
+2. télécharge les catégories de zonage OSM une par une ;
+3. classe les polygones vers les catégories CS2 ;
+4. écrit `../visualizer/datos_zonificacion.js`.
+
+La taille du fichier de sortie dépend de l'emprise choisie et de la densité des données OSM.
 
 ---
 
-## Step 5: Calibrate Density Thresholds (if needed)
+## Étape 4 — Ouvrir le visualiseur
 
-Open your city's visualizer and compare it against Google Maps or local knowledge:
+Ouvrez `visualizer/index.html` dans un navigateur moderne.
 
-- **Too much red (high density) in suburban areas?** Raise the `≥5` threshold to `≥7` or `≥10` in `src/classifiers.py`.
-- **Dense downtown showing as yellow (low density)?** Lower the `≥5` threshold to `≥3` or `≥4`.
-- **Entire city showing as low density?** Your city may have sparse `building:levels` data in OSM. Try using `residential_subtype` tags instead, or consult local OSM mapping communities.
+Si la carte est vide :
 
-The thresholds in `classify_residential()` were calibrated for Minneapolis specifically. European cities tend to have higher density at lower floor counts; US Sun Belt cities tend to be more spread out.
+- vérifiez que `visualizer/datos_zonificacion.js` existe ;
+- ouvrez la console du navigateur ;
+- vérifiez que le chemin du fichier généré correspond bien au fichier chargé par `index.html` ;
+- assurez-vous que la bbox n'est pas inversée.
+
+---
+
+## Étape 5 — Ajuster les seuils si nécessaire
+
+La classification résidentielle utilise des seuils simples dans `src/classifiers.py` :
 
 ```python
-# src/classifiers.py — adjust these thresholds:
-if (effective_levels >= 5   # <-- change this for high density
-        or residential_subtype in ("apartments", "condominium", "condo")):
+if effective_levels >= 5:
     return "high"
 
-if (effective_levels >= 3   # <-- change this for medium density
-        or building_type in ("terrace", "dormitory", "townhouse")
-        ...):
+if effective_levels >= 3:
     return "medium"
 ```
 
+Ces seuils sont volontairement faciles à ajuster.
+
+- Trop de haute densité dans des zones peu denses : augmentez le seuil `>= 5`.
+- Centre dense classé trop bas : baissez le seuil `>= 5` ou `>= 3`.
+- Presque toute la ville sort en basse densité : la donnée `building:levels` est probablement peu renseignée dans OSM.
+
 ---
 
-## OSM Coverage Considerations
+## Qualité des données OpenStreetMap
 
-The pipeline works best for cities with:
-- High OSM coverage (most North American and Western European cities)
-- `building:levels` tags on apartment buildings (common in OSM-active communities)
-- Standard `landuse=residential/commercial/industrial` tagging
+Le résultat dépend directement des tags présents dans OSM.
 
-Cities with sparse OSM data will produce fewer polygons and less granular density classification. Contributing to OSM for your city before running the pipeline will improve results.
+Le pipeline fonctionne mieux quand la zone contient :
 
-Check your city's OSM coverage at [osmstats.neis-one.org](https://osmstats.neis-one.org/).
+- des polygones `landuse=residential/commercial/industrial/retail` ;
+- des parkings avec `amenity=parking` ;
+- des bâtiments avec `building:levels` ou `levels` ;
+- des bureaux avec `office=*`, `building=office` ou `landuse=office`.
+
+Si une ville donne un résultat incomplet, améliorer la couverture OpenStreetMap locale avant de relancer l'extraction produira souvent un meilleur résultat.

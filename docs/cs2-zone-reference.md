@@ -1,85 +1,130 @@
-# CS2 Zone Reference — OSM Tags to Cities: Skylines 2
+<div align="center">
 
-Complete mapping table for all zone types in this pipeline. Zone names correspond to the **North American zone set** in the CS2 base game.
+# 🗺️ Référence des zones CS2
+## Tags OpenStreetMap → Cities: Skylines 2
 
----
-
-## Residential Zones
-
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `landuse=residential` | ≥5 floors OR `residential=apartments/condominium` | North American High Density Residential | `#e74c3c` red | High land value, requires good transit access. Generates most residents per cell. |
-| `landuse=residential` | ≥3 floors OR `building=terrace/townhouse` | North American Medium Density Residential | `#f39c12` orange | Balanced density. Works well near parks and schools. |
-| `landuse=residential` | default (1-2 floors, single family) | North American Low Density Residential | `#f1c40f` yellow | Lowest density. Requires road access, generates car traffic. |
-
-**Density classification logic:** See `src/classifiers.py:classify_residential()` and [METHODOLOGY.md §3](../METHODOLOGY.md#3-the-density-index-strategy).
+*Table de correspondance utilisée par le pipeline d'extraction.*
 
 ---
 
-## Commercial Zones
+</div>
 
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `landuse=commercial` | ≥4 floors | North American High Density Commercial | `#3498db` blue | Downtown office towers. Requires high-capacity road connections. |
-| `landuse=commercial` | default (<4 floors) | North American Low Density Commercial | `#85c1e9` light blue | Strip malls, neighborhood commercial. Lower traffic demand. |
+## 📑 Table des matières
 
----
-
-## Retail
-
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `landuse=retail` | — | North American Retail Hub | `#6ab4f7` sky blue | Shopping centers and retail corridors. High pedestrian traffic. Pairs well with transit stops. |
-
----
-
-## Industrial
-
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `landuse=industrial` | — | North American Industrial Zone | `#c8a000` gold | Factories, warehouses, logistics. Generates truck traffic. Keep away from residential (noise, pollution). |
-| `building=industrial/warehouse/factory` | — | North American Industrial Zone | `#c8a000` gold | Same as above, captured via building tag. |
+- [Résidentiel](#résidentiel)
+- [Commercial](#commercial)
+- [Commerce de détail](#commerce-de-détail)
+- [Industrie](#industrie)
+- [Parkings](#parkings)
+- [Bureaux](#bureaux)
+- [Usage mixte](#usage-mixte)
+- [Capture de la légende](#capture-de-la-légende)
+- [Packs de zones moddés](#packs-de-zones-moddés)
 
 ---
 
-## Parking
+## Résidentiel
 
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `amenity=parking` | `parking=multi-storey/underground/structure` | Parking Garage / Ramp | `#7f8c8d` dark grey | Structured parking asset. Counts toward parking supply for adjacent zones. |
-| `amenity=parking` | default (surface lot) | Surface Parking Lot | `#95a5a6` grey | Surface lots. In CS2, these often appear as unzoned land or low-density filler. |
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `landuse=residential` | `building:levels` ou `levels` ≥ 5, ou `residential=apartments/condominium/condo`, ou `building=apartments/residential` | Résidentiel haute densité | `#006400` | Immeubles et grands ensembles résidentiels. |
+| `landuse=residential` | `building:levels` ou `levels` ≥ 3, ou `building=terrace/dormitory/townhouse/semidetached_house`, ou sous-type résidentiel équivalent | Résidentiel moyenne densité | `#228B22` | Maisons de ville, dortoirs, petits collectifs. |
+| `landuse=residential` | Cas par défaut quand aucun indice de densité fiable n'est disponible | Résidentiel basse densité | `#5a9e2f` | Habitat individuel ou peu dense. |
 
----
-
-## Office
-
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `building=office` | not already captured as commercial | Office / Government Building | `#9b59b6` purple | Government buildings, corporate campuses. Provides high-value jobs. |
-| `office=*` | any office tag | Office / Government Building | `#9b59b6` purple | Same zone. |
-| `landuse=office` | — | Office / Government Building | `#9b59b6` purple | Same zone. |
-
-**Deduplication note:** Elements already captured in the `commercial` pass are excluded from the `office` pass. See [METHODOLOGY.md §6](../METHODOLOGY.md#6-commercialoffice-deduplication).
+**Logique associée :** `src/classifiers.py:classify_residential()` et [METHODOLOGY.md §3](../METHODOLOGY.md#3-stratégie-dindex-de-densité-résidentielle).
 
 ---
 
-## Mixed Use
+## Commercial
 
-| OSM Tag | Classification Condition | CS2 Zone Name | Map Color | Gameplay Notes |
-|---------|--------------------------|---------------|-----------|----------------|
-| `landuse=mixed` | — | Mixed-Use Development | `#00e5ff` cyan | Buildings with both residential and commercial uses. Common in urban cores and transit corridors. |
-| `building=mixed_use` | — | Mixed-Use Development | `#00e5ff` cyan | Same zone. |
-
----
-
-## Legend Screenshot
-
-![Zone legend](screenshots/preview_legend.png)
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `landuse=commercial` | `building:levels` ou `levels` ≥ 4, ou bâtiment commercial / bureau d'au moins 3 niveaux, ou `shop=mall/department_store`, ou tag `office=*` | Commercial haute densité | `#1a4bc4` | Grands bâtiments commerciaux, bureaux denses, centres commerciaux. |
+| `landuse=commercial` | Cas par défaut | Commercial basse densité | `#4da6ff` | Commerces de proximité et zones commerciales peu denses. |
 
 ---
 
-## Notes on Modded Zone Packs
+## Commerce de détail
 
-If you're using a modded zone pack (e.g., European zones, dense Asian zones), the zone names in CS2 will differ. Update the `CS2_LABELS` dictionary in `src/cs2_zones.py` to match your pack's zone IDs.
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `landuse=retail` | Toute zone correspondante | Commerce de détail | `#6ab4f7` | Centres commerciaux, corridors de commerces, grandes zones de vente. |
 
-The classification logic in `classifiers.py` is independent of CS2 zone names — only the labels in `cs2_zones.py` need changing.
+---
+
+## Industrie
+
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `landuse=industrial` | Toute zone correspondante | Industrie | `#c8a000` | Usines, entrepôts, logistique. |
+| `building=industrial/warehouse/factory` | Bâtiment capturé sans `landuse=industrial` explicite | Industrie | `#c8a000` | Même catégorie, détectée via le tag `building`. |
+
+---
+
+## Parkings
+
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `amenity=parking` | `parking=multi-storey/multistorey/structure/underground`, ou `building=parking/garage/garages` | Parking en ouvrage | `#39ff14` | Parking à étages, structure dédiée ou parking souterrain. |
+| `amenity=parking` | Cas par défaut | Parking de surface | `#b0ff5a` | Stationnement au sol. |
+
+---
+
+## Bureaux
+
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `building=office` | Objet non déjà capturé comme commercial | Bureaux / administration | `#9b59b6` | Immeubles tertiaires, administrations, sièges sociaux. |
+| `office=*` | Objet non déjà capturé comme commercial | Bureaux / administration | `#9b59b6` | Même catégorie. |
+| `landuse=office` | Objet non déjà capturé comme commercial | Bureaux / administration | `#9b59b6` | Même catégorie. |
+
+**Déduplication :** les objets déjà présents dans la passe `commercial` sont ignorés dans la passe `office`. Voir [METHODOLOGY.md §6](../METHODOLOGY.md#6-déduplication-commercial--bureaux).
+
+---
+
+## Usage mixte
+
+| Tag OSM | Condition de classification | Libellé CS2 | Couleur du visualiseur | Notes |
+|:--------|:----------------------------|:------------|:-----------------------:|:------|
+| `landuse=mixed` | Toute zone correspondante | Usage mixte | `#00e5ff` | Zone combinant plusieurs usages urbains. |
+| `building=mixed_use` | Bâtiment capturé sans `landuse=mixed` explicite | Usage mixte | `#00e5ff` | Même catégorie. |
+
+---
+
+## Capture de la légende
+
+<div align="center">
+
+![Légende des zones](screenshots/preview_legend.png)
+
+*Aperçu de la légende dans le visualiseur Leaflet.*
+
+</div>
+
+---
+
+## Packs de zones moddés
+
+Les libellés visibles sont centralisés dans `CS2_LABELS` dans `src/cs2_zones.py`.
+
+Si vous utilisez un pack de zones moddé, adaptez seulement ces libellés :
+
+```python
+CS2_LABELS = {
+    "res_high": "Résidentiel haute densité",
+    "res_med": "Résidentiel moyenne densité",
+    "res_low": "Résidentiel basse densité",
+    # ...
+}
+```
+
+La logique de classification dans `src/classifiers.py` reste indépendante des noms affichés.
+
+---
+
+<div align="center">
+
+📄 *Référence des zones — Projet d'extraction CS2 de zonage réel*
+📝 Sous licence MIT
+
+</div>

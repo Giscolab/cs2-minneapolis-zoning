@@ -2,6 +2,8 @@
  * descargar_zonificacion.js — v2
  * Minneapolis Zonificación · bbox expandido · Oficinas · Uso Mixto
  * Ejecutar: node descargar_zonificacion.js
+ *
+ * Fichier legacy conservé pour historique ; le pipeline maintenu est le script Python dans src/.
  */
 const https = require('https');
 const http  = require('http');

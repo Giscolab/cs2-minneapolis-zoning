@@ -868,7 +868,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="load-text">Chargement des couches de zonage…</div>
 </div>
 
-<!-- GLASSMORPHISM PANEL -->
+<!-- PANNEAU DE CONTROLE -->
 <div id="panel">
   <div class="panel-header">
     <div class="panel-logo">🏙️</div>
@@ -880,7 +880,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   <div class="section-label">Couches de zonage</div>
 
-  <!-- Residential -->
+  <!-- Résidentiel -->
   <div class="layer-item" id="toggle-res-high" onclick="toggleLayer('res_high')">
     <div class="layer-swatch" style="background:#006400"></div>
     <div class="layer-info">
@@ -932,7 +932,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="toggle-btn active" id="btn-retail"></div>
   </div>
 
-  <!-- Industrial -->
+  <!-- Industrie -->
   <div class="layer-item" id="toggle-industrial" onclick="toggleLayer('industrial')">
     <div class="layer-swatch" style="background:#c8a000"></div>
     <div class="layer-info">
@@ -942,7 +942,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="toggle-btn active" id="btn-industrial"></div>
   </div>
 
-  <!-- Offices -->
+  <!-- Bureaux -->
   <div class="layer-item" id="toggle-office" onclick="toggleLayer('office')">
     <div class="layer-swatch" style="background:#9b59b6; box-shadow: 0 0 6px #9b59b6"></div>
     <div class="layer-info">
@@ -952,7 +952,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <div class="toggle-btn active" id="btn-office"></div>
   </div>
 
-  <!-- Mixed -->
+  <!-- Usage mixte -->
   <div class="layer-item" id="toggle-mixed" onclick="toggleLayer('mixed')">
     <div class="layer-swatch" style="background:#00e5ff; box-shadow: 0 0 6px #00e5ff"></div>
     <div class="layer-info">
@@ -1027,13 +1027,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <script src="datos_zonificacion.js"></script>
 <script>
 // ============================================================
-//  MAP INIT
+//  INITIALISATION DE LA CARTE
 // ============================================================
 const map = L.map('map', {
   zoomControl: false
 });
 
-// CartoDB Dark Matter
+// Fond de carte CartoDB Dark Matter
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution: '©OpenStreetMap ©CartoDB',
   subdomains: 'abcd',
@@ -1046,7 +1046,7 @@ L.control.zoom({ position: 'bottomleft' }).addTo(map);
 map.fitBounds([[44.8896, -93.3293],[45.0512, -93.1934]]);
 
 // ============================================================
-//  LAYER GROUPS
+//  GROUPES DE COUCHES
 // ============================================================
 const GROUPS = {
   res_high: L.layerGroup().addTo(map),
@@ -1103,7 +1103,7 @@ function buildPopup(feature) {
 }
 
 // ============================================================
-//  RENDER POLYGONS
+//  RENDU DES POLYGONES
 // ============================================================
 function addPolygons(data, groupKey, fillColor, borderColor, zoneOverride) {
   const group = GROUPS[groupKey];
@@ -1128,11 +1128,11 @@ function addPolygons(data, groupKey, fillColor, borderColor, zoneOverride) {
 }
 
 // ============================================================
-//  POPULATE LAYERS
+//  ALIMENTATION DES COUCHES
 // ============================================================
 let totalRamp = 0, totalInd = 0, totalRes = 0;
 
-// Residential — split by classification
+// Résidentiel — séparation par classification
 const resHigh = DATA_RESIDENTIAL.filter(f => f.zone === 'high');
 const resMed  = DATA_RESIDENTIAL.filter(f => f.zone === 'medium');
 const resLow  = DATA_RESIDENTIAL.filter(f => f.zone === 'low');
@@ -1147,26 +1147,26 @@ const comLow  = DATA_COMMERCIAL.filter(f => f.zone === 'low');
 addPolygons(comHigh, 'com_high', '#1a4bc4', '#0d2d80');
 addPolygons(comLow,  'com_low',  '#4da6ff', '#2d85e0');
 
-// Retail
+// Commerce de détail
 addPolygons(DATA_RETAIL, 'retail', '#6ab4f7', '#4a90d9', 'retail');
 
-// Industrial
+// Industrie
 addPolygons(DATA_INDUSTRIAL, 'industrial', '#c8a000', '#a07a00', 'industrial');
 totalInd = DATA_INDUSTRIAL.length;
 
-// Parking — split by type
+// Parking — séparation par type
 const prkRamp    = DATA_PARKING.filter(f => f.zone === 'ramp');
 const prkSurface = DATA_PARKING.filter(f => f.zone === 'surface');
 addPolygons(prkRamp,    'prk_ramp',    '#39ff14', '#25cc00');
 addPolygons(prkSurface, 'prk_surface', '#b0ff5a', '#88cc44');
 totalRamp = prkRamp.length;
 
-// Oficinas y Uso Mixto
+// Bureaux et usage mixte
 addPolygons(DATA_OFFICE, 'office', '#9b59b6', '#6c3483', 'office');
 addPolygons(DATA_MIXED,  'mixed',  '#00e5ff', '#00b8cc', 'mixed');
 
 // ============================================================
-//  STATS
+//  STATISTIQUES
 // ============================================================
 const totalAll = DATA_RESIDENTIAL.length + DATA_COMMERCIAL.length +
                  DATA_RETAIL.length + DATA_INDUSTRIAL.length + DATA_PARKING.length +
@@ -1177,7 +1177,7 @@ document.getElementById('stat-res').textContent = totalRes.toLocaleString();
 document.getElementById('stat-ind').textContent = totalInd.toLocaleString();
 
 // ============================================================
-//  TOGGLE LAYERS
+//  BASCULE DES COUCHES
 // ============================================================
 function toggleLayer(key) {
   ACTIVE[key] = !ACTIVE[key];
@@ -1193,7 +1193,7 @@ function toggleLayer(key) {
 }
 
 // ============================================================
-//  REMOVE LOADING SCREEN
+//  RETRAIT DE L'ECRAN DE CHARGEMENT
 // ============================================================
 setTimeout(() => {
   const loadEl = document.getElementById('loading');

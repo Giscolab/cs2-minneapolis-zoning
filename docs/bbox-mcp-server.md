@@ -1,42 +1,48 @@
-# bbox-mcp-server — Optional AI Tool for Bounding Box Queries
+# bbox-mcp-server — outil MCP optionnel pour les bounding boxes
 
-`bbox-mcp-server` is a community MCP (Model Context Protocol) server that lets AI assistants (Claude, Copilot, etc.) query OpenStreetMap data directly from bounding boxes. It was used during the development of this project.
+`bbox-mcp-server` est un serveur MCP communautaire permettant à certains assistants IA d'interroger des données OpenStreetMap ou de récupérer des boîtes géographiques.
 
-**Repository:** [github.com/bboxmcp/bbox-mcp-server](https://github.com/bboxmcp/bbox-mcp-server) *(check for the current URL — this is the community project)*
+Il a été utilisé pendant le développement du projet, mais il n'est pas requis pour exécuter le pipeline.
 
----
-
-## What It Does
-
-MCP (Model Context Protocol) is a standard that lets AI assistants connect to external tools and data sources. `bbox-mcp-server` exposes OpenStreetMap's Overpass API as an MCP tool, meaning you can ask your AI assistant things like:
-
-> "What is the bounding box for the city of Portland, Oregon?"
-> "Search for all parks within the Minneapolis downtown area."
-> "Get OSM data for zip code 55401."
-
-The AI assistant queries OSM directly and returns structured results — no manual coordinate lookup needed.
+**Dépôt :** [github.com/bboxmcp/bbox-mcp-server](https://github.com/bboxmcp/bbox-mcp-server)
+Vérifiez l'URL et les instructions actuelles dans le dépôt du projet communautaire.
 
 ---
 
-## How This Project Used It
+## Ce que fait l'outil
 
-During development of this pipeline, `bbox-mcp-server` was used to:
+MCP signifie *Model Context Protocol*. C'est un standard permettant à un assistant IA de se connecter à des outils externes.
 
-1. **Obtain bounding box coordinates** for Minneapolis without leaving the editor
-2. **Verify coverage** by querying specific neighborhoods before running the full extraction
-3. **Test Overpass QL queries** incrementally during development
+Dans ce contexte, `bbox-mcp-server` peut aider à répondre à des questions comme :
 
-The MCP server is completely optional — you can get the same results from [Nominatim](https://nominatim.openstreetmap.org/) or [bboxfinder.com](http://bboxfinder.com/). But if you're building CS2 maps with AI assistance, having this tool available in your workflow speeds up the iteration cycle.
+```text
+Quelle est la bounding box de Portland, Oregon ?
+Cherche les parcs dans le centre de Lyon.
+Récupère des données OSM pour une zone donnée.
+```
+
+L'assistant interroge alors les services configurés et renvoie des résultats structurés.
+
+---
+
+## Utilisation dans ce projet
+
+Pendant le développement, `bbox-mcp-server` a servi à :
+
+1. obtenir rapidement des coordonnées de bounding box ;
+2. vérifier la couverture OSM de certains quartiers ;
+3. tester progressivement des requêtes Overpass QL.
+
+Le pipeline actuel n'en dépend pas. Vous pouvez obtenir les mêmes coordonnées avec [Nominatim](https://nominatim.openstreetmap.org/) ou un outil de bbox manuel.
 
 ---
 
 ## Installation
 
-The installation steps depend on which AI platform you're using.
+Les étapes exactes dépendent de l'assistant IA ou de l'éditeur utilisé.
 
-**For Claude Code (Anthropic):**
+### Exemple de configuration MCP
 
-Add to your MCP configuration (`.claude/mcp.json` or via `/mcp` command):
 ```json
 {
   "mcpServers": {
@@ -48,31 +54,37 @@ Add to your MCP configuration (`.claude/mcp.json` or via `/mcp` command):
 }
 ```
 
-**For VS Code Copilot:**
+### Prérequis
 
-Check the bbox-mcp-server repository for current VS Code installation instructions.
+Node.js doit être installé :
 
-**Prerequisite:** Node.js must be installed (`node --version` to verify).
-
----
-
-## Example Usage
-
-Once installed, in a Claude Code or Copilot session:
-
-```
-User: What's the bounding box for Minneapolis, MN?
-AI:   Using bbox-mcp-server to query Nominatim...
-      Minneapolis, MN bounding box: 44.8896,-93.3297,45.0513,-93.1938
-```
-
-You can then pass this directly to `extract_zoning.py`:
 ```bash
-uv run extract_zoning.py --bbox "44.8896,-93.3297,45.0513,-93.1938"
+node --version
+```
+
+Consultez le dépôt `bbox-mcp-server` pour les instructions spécifiques à Claude Code, VS Code Copilot ou tout autre client MCP.
+
+---
+
+## Exemple d'utilisation
+
+Après installation dans un client compatible MCP :
+
+```text
+Utilisateur : Quelle est la bounding box de Paris ?
+Assistant   : Bounding box approximative : 48.766147,2.161560,48.945053,2.485657
+```
+
+Vous pouvez ensuite passer cette valeur au script :
+
+```bash
+python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"
 ```
 
 ---
 
-## This Project Does NOT Require bbox-mcp-server
+## Ce projet ne nécessite pas bbox-mcp-server
 
-The extraction pipeline (`extract_zoning.py`) queries Overpass API directly using `requests`. `bbox-mcp-server` is a developer convenience tool, not a runtime dependency. You can run this entire project without it.
+`extract_zoning.py` interroge directement l'API Overpass avec `requests`.
+
+`bbox-mcp-server` est seulement un outil de confort pour le développement et la recherche de coordonnées. Il n'est ni une dépendance Python, ni une dépendance d'exécution du visualiseur.
