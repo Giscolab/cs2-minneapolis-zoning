@@ -1,113 +1,121 @@
-# GitHub Publishing Instructions
+# Publication du dépôt sur GitHub
 
-Steps to publish `cs2-minneapolis-zoning` to GitHub as a public repo.
+Cette note décrit une publication propre du projet sous forme de dépôt public générique.
 
----
-
-## Step 1 — Create the repository on GitHub
-
-1. Go to **https://github.com/new**
-2. Fill in:
-   - **Repository name:** `cs2-minneapolis-zoning`
-   - **Description:** `GIS pipeline to extract real-world zoning data from OpenStreetMap for Cities Skylines 2`
-   - **Visibility:** ✅ Public
-   - **Initialize repository:** Leave all checkboxes UNCHECKED (we'll push existing files)
-3. Click **Create repository**
+Remplacez les noms, chemins et URL d'exemple par ceux du dépôt réel.
 
 ---
 
-## Step 2 — Initialize git and push
+## Étape 1 — Créer le dépôt GitHub
 
-Run these commands from the `cs2-minneapolis-zoning/` folder:
+1. Ouvrez [github.com/new](https://github.com/new).
+2. Renseignez :
+   - **Repository name:** `cs2-real-zoning-extractor` ou le nom choisi pour le fork ;
+   - **Description:** `Extracteur SIG de zonage OpenStreetMap pour Cities: Skylines 2` ;
+   - **Visibility:** Public ou Private selon le besoin ;
+   - **Initialize repository:** laissez les cases décochées si le dépôt local existe déjà.
+3. Cliquez sur **Create repository**.
+
+---
+
+## Étape 2 — Vérifier le dépôt local
+
+Depuis la racine du projet :
 
 ```bash
-# Navigate to the repo folder
-cd "C:\Users\osyanne\Documents\Claude\Projects\Urban Planning Minneapolis Realism\cs2-minneapolis-zoning"
-
-# Initialize git
-git init
-
-# Stage all files
-git add .
-
-# Verify what's being committed (check .gitignore is excluding the right things)
 git status
+git diff
+```
 
-# Create the initial commit
-git commit -m "feat: initial release v1.0 — Minneapolis zoning pipeline
+Avant de publier, vérifiez en particulier :
 
-- Python extraction script with multi-endpoint retry logic
-- Interactive Leaflet.js visualizer (CartoDB Dark Matter)
-- Full methodology documentation (METHODOLOGY.md)
-- CS2 zone type reference guide (docs/cs2-zone-reference.md)
-- Adapting to other cities guide (docs/adapting-to-other-cities.md)
-- bbox-mcp-server optional dependency guide
+- `.gitignore` est présent ;
+- les environnements locaux (`.venv/`) ne sont pas ajoutés ;
+- les caches Python (`__pycache__/`) ne sont pas ajoutés ;
+- les fichiers générés lourds ne sont pas ajoutés par accident ;
+- `visualizer/datos_zonificacion.js` n'est publié que si c'est un choix volontaire ;
+- `data/sample_output.js` reste un échantillon raisonnable.
 
-Coverage: Full Minneapolis bbox (44.86,-93.38,45.05,-93.17)
-Data source: OpenStreetMap via Overpass API"
+---
 
-# Point to GitHub remote
+## Étape 3 — Initialiser et pousser
+
+Si le dépôt n'est pas encore initialisé :
+
+```bash
+git init
+git add .
+git status
+git commit -m "feat: publish generic CS2 zoning extractor"
+```
+
+Ajoutez ensuite le dépôt distant :
+
+```bash
 git branch -M main
-git remote add origin https://github.com/Osyanne/cs2-minneapolis-zoning.git
-
-# Push
+git remote add origin https://github.com/<owner>/<repo>.git
 git push -u origin main
 ```
 
----
-
-## Step 3 — Configure the repository on GitHub
-
-After pushing, go to your repo settings and configure:
-
-**Topics/Tags** (Settings → Topics):
-```
-cities-skylines-2  gis  openstreetmap  overpass-api  leaflet
-urban-planning  open-source  python  minneapolis
-```
-
-**About section** (click the gear icon on the repo homepage):
-- Description: `GIS pipeline to extract real-world zoning data from OpenStreetMap for Cities Skylines 2`
-- Website: *(leave blank for now, or add GitHub Pages URL if you set it up)*
-
----
-
-## Step 4 — Verify before posting to Reddit
-
-Check these items before posting:
-
-- [ ] `README.md` renders correctly on GitHub (images show, tables format correctly)
-- [ ] `src/` files are present and complete
-- [ ] `visualizer/datos_zonificacion.js` is the PLACEHOLDER (empty arrays), NOT the 5.4 MB real file
-- [ ] `data/sample_output.js` exists with real data subset (~42 KB)
-- [ ] `docs/screenshots/` contains all 3 PNG files
-- [ ] `LICENSE` shows "Copyright (c) 2026 Osyanne"
-- [ ] `.gitignore` is present (check it excluded `.venv/`, `__pycache__/`, etc.)
-
----
-
-## Optional: GitHub Pages for the visualizer
-
-To host the visualizer as a live demo:
-
-1. Go to repo **Settings → Pages**
-2. Source: **Deploy from a branch**
-3. Branch: `main`, Folder: `/visualizer`
-4. Save
-
-The live map will be at: `https://osyanne.github.io/cs2-minneapolis-zoning/`
-
-Note: The live demo will show an empty map until visitors run `extract_zoning.py` themselves (the data file is excluded from git). You can add a note about this in the visualizer or show `sample_output.js` as the default.
-
----
-
-## File size verification
-
-Before pushing, verify no large files are included:
+Si le dépôt est déjà lié à GitHub, utilisez seulement :
 
 ```bash
-# Check file sizes in the repo (should all be small)
-find . -not -path './.git/*' -type f | xargs ls -lh | sort -k5 -rh | head -20
+git status
+git push
 ```
 
-The largest file should be `data/sample_output.js` at ~42 KB. If you see anything over 1 MB, double-check your `.gitignore`.
+---
+
+## Étape 4 — Configurer la page GitHub
+
+Dans l'onglet principal du dépôt, configurez la section **About** :
+
+- **Description:** `Extracteur SIG de zonage OpenStreetMap pour Cities: Skylines 2`
+- **Website:** laissez vide, ou indiquez l'URL GitHub Pages si elle existe
+- **Topics:**
+
+```text
+cities-skylines-2 gis openstreetmap overpass-api leaflet
+urban-planning open-source python zoning
+```
+
+---
+
+## Étape 5 — Vérifier le rendu GitHub
+
+Avant de partager le dépôt :
+
+- [ ] `README.md` s'affiche correctement ;
+- [ ] `METHODOLOGY.md` est lisible ;
+- [ ] les fichiers de `docs/` sont en français ;
+- [ ] les captures dans `docs/screenshots/` s'affichent ;
+- [ ] `src/` contient les scripts nécessaires ;
+- [ ] `LICENSE` est présent ;
+- [ ] aucun fichier local ou temporaire n'a été ajouté.
+
+---
+
+## Option — GitHub Pages pour le visualiseur
+
+Pour publier une démo statique :
+
+1. ouvrez **Settings → Pages** ;
+2. choisissez **Deploy from a branch** ;
+3. sélectionnez `main` et le dossier `/visualizer` ;
+4. enregistrez.
+
+La page sera disponible à l'adresse indiquée par GitHub Pages.
+
+Attention : le visualiseur charge `datos_zonificacion.js`. Si ce fichier n'est pas publié avec des données réelles, la carte affichera une démonstration vide ou partielle.
+
+---
+
+## Vérification de taille des fichiers
+
+Avant un push important, listez les plus gros fichiers suivis :
+
+```bash
+git ls-files | xargs ls -lh | sort -k5 -rh | head -20
+```
+
+Si un fichier généré volumineux apparaît sans intention claire, retirez-le du commit et vérifiez `.gitignore`.
