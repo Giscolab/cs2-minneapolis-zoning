@@ -3,7 +3,7 @@
  * Zonage historique Minneapolis · bbox élargie · bureaux · usage mixte
  * Exécution : node descargar_zonificacion.js
  *
- * Fichier legacy conservé pour historique ; le pipeline maintenu est le script Python dans src/.
+ * Fichier historique conservé pour référence ; le pipeline maintenu est le script Python dans src/.
  */
 const https = require('https');
 const http  = require('http');
