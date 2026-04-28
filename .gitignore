@@ -1,22 +1,57 @@
-# Generated data (too large for git)
-datos_zonificacion.js
-!data/sample_output.js
-!visualizer/datos_zonificacion.js
+# =========================
+# GENERATED ZONING OUTPUT
+# =========================
 
-# Python
+visualizer/datos_zonificacion.js
+src/datos_zonificacion.js
+*.log
+
+# keep only lightweight example data
+!data/sample_output.js
+
+
+# =========================
+# PYTHON
+# =========================
+
 __pycache__/
-*.pyc
-.venv/
+*.py[cod]
+*.pyo
+*.pyd
 *.egg-info/
 dist/
+build/
+.venv/
+src/.venv/
 
-# Node (bbox-mcp-server local)
+
+# =========================
+# NODE / MCP LOCAL TOOLS
+# =========================
+
 node_modules/
 
-# OS
-.DS_Store
-Thumbs.db
 
-# IDE
+# =========================
+# IDE / EDITOR
+# =========================
+
 .vscode/
 .idea/
+
+
+# =========================
+# OS FILES
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# =========================
+# TEMP / LOCAL ANALYSIS
+# =========================
+
+arbo.txt
+*.tmp
