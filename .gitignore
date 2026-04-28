@@ -1,12 +1,12 @@
 # =========================
-# GENERATED ZONING OUTPUT
+# SORTIES DE ZONAGE GENEREES
 # =========================
 
 visualizer/datos_zonificacion.js
 src/datos_zonificacion.js
 *.log
 
-# keep only lightweight example data
+# Conserver seulement l'echantillon leger.
 !data/sample_output.js
 
 
@@ -26,14 +26,14 @@ src/.venv/
 
 
 # =========================
-# NODE / MCP LOCAL TOOLS
+# OUTILS LOCAUX NODE / MCP
 # =========================
 
 node_modules/
 
 
 # =========================
-# IDE / EDITOR
+# IDE / EDITEUR
 # =========================
 
 .vscode/
@@ -41,7 +41,7 @@ node_modules/
 
 
 # =========================
-# OS FILES
+# FICHIERS SYSTEME
 # =========================
 
 .DS_Store
@@ -50,7 +50,7 @@ desktop.ini
 
 
 # =========================
-# TEMP / LOCAL ANALYSIS
+# TEMPORAIRE / ANALYSE LOCALE
 # =========================
 
 arbo.txt

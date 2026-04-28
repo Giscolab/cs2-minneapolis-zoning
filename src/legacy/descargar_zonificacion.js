@@ -1,7 +1,7 @@
 /**
  * descargar_zonificacion.js — v2
- * Minneapolis Zonificación · bbox expandido · Oficinas · Uso Mixto
- * Ejecutar: node descargar_zonificacion.js
+ * Zonage historique Minneapolis · bbox élargie · bureaux · usage mixte
+ * Exécution : node descargar_zonificacion.js
  *
  * Fichier legacy conservé pour historique ; le pipeline maintenu est le script Python dans src/.
  */
@@ -33,7 +33,7 @@ function post(url, body) {
       headers: {
         'Content-Type':   'application/x-www-form-urlencoded',
         'Content-Length': data.length,
-        'User-Agent':     'Minneapolis-Realism/2.0'
+        'User-Agent':     'CS2-Real-Zoning-Legacy/2.0'
       }
     }, res => {
       const chunks = [];
@@ -56,17 +56,17 @@ async function queryWithRetry(query, label) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     for (const ep of ENDPOINTS) {
       try {
-        process.stdout.write(`  ${label} -> ${ep.split('/')[2]} (intento ${attempt})... `);
+        process.stdout.write(`  ${label} -> ${ep.split('/')[2]} (tentative ${attempt})... `);
         const r = await post(ep, 'data=' + encodeURIComponent(query));
         console.log(`OK (${(r.length / 1024).toFixed(0)} KB)`);
         return r;
       } catch (e) {
-        console.log(`FALLO: ${e.message.slice(0, 60)}`);
+        console.log(`ECHEC : ${e.message.slice(0, 60)}`);
         await new Promise(r => setTimeout(r, 3000));
       }
     }
   }
-  throw new Error(`No se pudo descargar: ${label}`);
+  throw new Error(`Téléchargement impossible : ${label}`);
 }
 
 function coordsFromWay(el) {
@@ -100,17 +100,17 @@ function residentialZone(tags, buildingIndex, elId) {
 }
 
 const CS2_LABELS = {
-  res_high:    'North American High Density Residential',
-  res_med:     'North American Medium Density Residential',
-  res_low:     'North American Low Density Residential',
-  com_high:    'North American High Density Commercial',
-  com_low:     'North American Low Density Commercial',
-  retail:      'North American Retail Hub',
-  industrial:  'North American Industrial Zone',
-  prk_ramp:    'Parking Garage / Ramp',
-  prk_surface: 'Surface Parking Lot',
-  office:      'Office / Government Building',
-  mixed:       'Mixed-Use Development',
+  res_high:    'Résidentiel haute densité',
+  res_med:     'Résidentiel moyenne densité',
+  res_low:     'Résidentiel basse densité',
+  com_high:    'Commercial haute densité',
+  com_low:     'Commercial basse densité',
+  retail:      'Commerce de détail',
+  industrial:  'Industrie',
+  prk_ramp:    'Parking en ouvrage',
+  prk_surface: 'Parking de surface',
+  office:      'Bureaux / administration',
+  mixed:       'Usage mixte',
 };
 
 const QUERIES = {
@@ -125,10 +125,10 @@ const QUERIES = {
 };
 
 async function main() {
-  console.log('[0/5] Minneapolis Zonificacion v2');
-  console.log(`      Bounding Box: ${BBOX}\n`);
+  console.log('[0/5] Zonage historique Minneapolis v2');
+  console.log(`      BBOX : ${BBOX}\n`);
 
-  console.log('[1/5] Construyendo indice de densidad...');
+  console.log('[1/5] Construction de l’index de densité...');
   const bldRaw = await queryWithRetry(QUERIES.buildings_levels, 'buildings_levels');
   const bldEls = JSON.parse(bldRaw).elements || [];
   const buildingIndex = new Map();
@@ -136,18 +136,18 @@ async function main() {
     const lvl = parseInt((el.tags || {})['building:levels'] || '0', 10);
     if (lvl > 0) buildingIndex.set(el.id, lvl);
   }
-  console.log(`      Indice: ${buildingIndex.size} edificios con datos de niveles\n`);
+  console.log(`      Index : ${buildingIndex.size} bâtiments avec données d’étages\n`);
 
   const MAIN = ['residential', 'commercial', 'industrial', 'retail', 'parking', 'office', 'mixed'];
-  console.log('[2/5] Descargando poligonos (7 consultas)...');
+  console.log('[2/5] Téléchargement des polygones (7 requêtes)...');
   const results = {};
   for (const key of MAIN) {
     const raw = await queryWithRetry(QUERIES[key], key);
     results[key] = JSON.parse(raw).elements || [];
-    console.log(`      ${key}: ${results[key].length} elementos`);
+    console.log(`      ${key}: ${results[key].length} éléments`);
   }
 
-  console.log('\n[3/5] Clasificando...');
+  console.log('\n[3/5] Classification...');
   const DATA_RESIDENTIAL = [];
   const DATA_COMMERCIAL  = [];
   const DATA_INDUSTRIAL  = [];
@@ -157,7 +157,7 @@ async function main() {
   const DATA_MIXED       = [];
   let skipped = 0;
 
-  // Commercial must run first — populates commercialIds used to dedup office elements below
+  // Le commercial doit être traité d'abord pour dédupliquer ensuite les bureaux.
   const commercialIds = new Set();
   for (const el of results.commercial) {
     commercialIds.add(el.id);
@@ -167,7 +167,7 @@ async function main() {
     const lvl  = parseInt(tags['building:levels'] || tags['levels'] || '1', 10);
     const zone = lvl >= 4 ? 'high' : 'low';
     DATA_COMMERCIAL.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords, zone,
+      id: el.id, name: tags.name || 'Sans nom', coords, zone,
       cs2: zone === 'high' ? CS2_LABELS.com_high : CS2_LABELS.com_low
     });
   }
@@ -180,7 +180,7 @@ async function main() {
     const cs2  = zone === 'high' ? CS2_LABELS.res_high
                : zone === 'medium' ? CS2_LABELS.res_med
                : CS2_LABELS.res_low;
-    DATA_RESIDENTIAL.push({ id: el.id, name: tags.name || 'Sin nombre', coords, zone, cs2 });
+    DATA_RESIDENTIAL.push({ id: el.id, name: tags.name || 'Sans nom', coords, zone, cs2 });
   }
 
   for (const el of results.industrial) {
@@ -188,7 +188,7 @@ async function main() {
     const coords = extractCoords(el);
     if (!coords) { skipped++; continue; }
     DATA_INDUSTRIAL.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords,
+      id: el.id, name: tags.name || 'Sans nom', coords,
       zone: 'industrial', cs2: CS2_LABELS.industrial
     });
   }
@@ -198,7 +198,7 @@ async function main() {
     const coords = extractCoords(el);
     if (!coords) { skipped++; continue; }
     DATA_RETAIL.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords,
+      id: el.id, name: tags.name || 'Sans nom', coords,
       zone: 'retail', cs2: CS2_LABELS.retail
     });
   }
@@ -212,7 +212,7 @@ async function main() {
                      parking === 'structure'    || parking === 'underground')
                     ? 'ramp' : 'surface';
     DATA_PARKING.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords, zone,
+      id: el.id, name: tags.name || 'Sans nom', coords, zone,
       cs2: zone === 'ramp' ? CS2_LABELS.prk_ramp : CS2_LABELS.prk_surface
     });
   }
@@ -223,7 +223,7 @@ async function main() {
     const coords = extractCoords(el);
     if (!coords) { skipped++; continue; }
     DATA_OFFICE.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords,
+      id: el.id, name: tags.name || 'Sans nom', coords,
       zone: 'office', cs2: CS2_LABELS.office
     });
   }
@@ -233,7 +233,7 @@ async function main() {
     const coords = extractCoords(el);
     if (!coords) { skipped++; continue; }
     DATA_MIXED.push({
-      id: el.id, name: tags.name || 'Sin nombre', coords,
+      id: el.id, name: tags.name || 'Sans nom', coords,
       zone: 'mixed', cs2: CS2_LABELS.mixed
     });
   }
@@ -241,24 +241,24 @@ async function main() {
   const total = DATA_RESIDENTIAL.length + DATA_COMMERCIAL.length + DATA_INDUSTRIAL.length +
                 DATA_RETAIL.length + DATA_PARKING.length + DATA_OFFICE.length + DATA_MIXED.length;
 
-  console.log('\n[4/5] Resumen:');
+  console.log('\n[4/5] Résumé :');
   const hi  = DATA_RESIDENTIAL.filter(f => f.zone === 'high').length;
   const med = DATA_RESIDENTIAL.filter(f => f.zone === 'medium').length;
   const lo  = DATA_RESIDENTIAL.filter(f => f.zone === 'low').length;
-  console.log(`  Residencial alta/media/baja : ${hi} / ${med} / ${lo}`);
-  console.log(`  Comercial alta/baja         : ${DATA_COMMERCIAL.filter(f=>f.zone==='high').length} / ${DATA_COMMERCIAL.filter(f=>f.zone==='low').length}`);
-  console.log(`  Industrial                  : ${DATA_INDUSTRIAL.length}`);
-  console.log(`  Retail                      : ${DATA_RETAIL.length}`);
+  console.log(`  Résidentiel haut/moyen/bas  : ${hi} / ${med} / ${lo}`);
+  console.log(`  Commercial haut/bas         : ${DATA_COMMERCIAL.filter(f=>f.zone==='high').length} / ${DATA_COMMERCIAL.filter(f=>f.zone==='low').length}`);
+  console.log(`  Industrie                   : ${DATA_INDUSTRIAL.length}`);
+  console.log(`  Commerce de détail          : ${DATA_RETAIL.length}`);
   console.log(`  Parking                     : ${DATA_PARKING.length}`);
-  console.log(`  Oficinas NUEVO              : ${DATA_OFFICE.length}`);
-  console.log(`  Uso Mixto NUEVO             : ${DATA_MIXED.length}`);
-  console.log(`  Sin geometria (omitidos)    : ${skipped}`);
+  console.log(`  Bureaux                     : ${DATA_OFFICE.length}`);
+  console.log(`  Usage mixte                 : ${DATA_MIXED.length}`);
+  console.log(`  Sans géométrie (ignorés)    : ${skipped}`);
   console.log(`  TOTAL                       : ${total}`);
 
-  console.log('\n[5/5] Escribiendo datos_zonificacion.js...');
+  console.log('\n[5/5] Écriture de datos_zonificacion.js...');
   const js = [
-    '// Generado automaticamente -- ' + new Date().toISOString(),
-    '// Minneapolis Zonificacion v2 -- bbox: ' + BBOX,
+    '// Généré automatiquement -- ' + new Date().toISOString(),
+    '// Zonage historique Minneapolis v2 -- bbox : ' + BBOX,
     '',
     'const DATA_RESIDENTIAL = ' + JSON.stringify(DATA_RESIDENTIAL) + ';',
     'const DATA_COMMERCIAL  = ' + JSON.stringify(DATA_COMMERCIAL)  + ';',
@@ -271,7 +271,7 @@ async function main() {
 
   fs.writeFileSync(OUT_FILE, js, 'utf8');
   const sizeMB = (fs.statSync(OUT_FILE).size / 1024 / 1024).toFixed(1);
-  console.log(`\nListo. ${OUT_FILE} -- ${sizeMB} MB -- ${total} poligonos`);
+  console.log(`\nTerminé. ${OUT_FILE} -- ${sizeMB} MB -- ${total} polygones`);
 }
 
-main().catch(e => { console.error('ERROR:', e.message); process.exit(1); });
+main().catch(e => { console.error('ERREUR :', e.message); process.exit(1); });
