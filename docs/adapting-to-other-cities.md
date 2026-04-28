@@ -39,7 +39,7 @@ Réordonnez-le en `south,west,north,east` avant de le passer au script.
 Si vous utilisez un assistant compatible MCP et que `bbox-mcp-server` est installé, demandez par exemple :
 
 ```text
-Quelle est la bounding box de Lyon, France ?
+Quelle est la bbox de Lyon, France ?
 ```
 
 Voir [bbox-mcp-server.md](bbox-mcp-server.md) pour le contexte d'utilisation.
@@ -55,7 +55,7 @@ Vérifiez toujours l'ordre des coordonnées avant l'extraction : beaucoup d'outi
 | Ville | BBOX au format `sud,ouest,nord,est` |
 |:------|:------------------------------------|
 | Paris | `48.766147,2.161560,48.945053,2.485657` |
-| Minneapolis | `44.86,-93.38,45.05,-93.17` |
+| New York | `40.70,-74.02,40.83,-73.91` |
 | Chicago | `41.64,-87.94,42.02,-87.52` |
 | Portland | `45.43,-122.84,45.65,-122.47` |
 | Austin | `30.10,-97.97,30.52,-97.56` |

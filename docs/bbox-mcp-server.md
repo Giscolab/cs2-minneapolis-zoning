@@ -1,4 +1,4 @@
-# bbox-mcp-server — outil MCP optionnel pour les bounding boxes
+# bbox-mcp-server — outil MCP optionnel pour les bbox
 
 `bbox-mcp-server` est un serveur MCP communautaire permettant à certains assistants IA d'interroger des données OpenStreetMap ou de récupérer des boîtes géographiques.
 
@@ -16,7 +16,7 @@ MCP signifie *Model Context Protocol*. C'est un standard permettant à un assist
 Dans ce contexte, `bbox-mcp-server` peut aider à répondre à des questions comme :
 
 ```text
-Quelle est la bounding box de Portland, Oregon ?
+Quelle est la bbox de Portland, Oregon ?
 Cherche les parcs dans le centre de Lyon.
 Récupère des données OSM pour une zone donnée.
 ```
@@ -29,7 +29,7 @@ L'assistant interroge alors les services configurés et renvoie des résultats s
 
 Pendant le développement, `bbox-mcp-server` a servi à :
 
-1. obtenir rapidement des coordonnées de bounding box ;
+1. obtenir rapidement des coordonnées de bbox ;
 2. vérifier la couverture OSM de certains quartiers ;
 3. tester progressivement des requêtes Overpass QL.
 
@@ -71,8 +71,8 @@ Consultez le dépôt `bbox-mcp-server` pour les instructions spécifiques à Cla
 Après installation dans un client compatible MCP :
 
 ```text
-Utilisateur : Quelle est la bounding box de Paris ?
-Assistant   : Bounding box approximative : 48.766147,2.161560,48.945053,2.485657
+Utilisateur : Quelle est la bbox de Paris ?
+Assistant   : bbox approximative : 48.766147,2.161560,48.945053,2.485657
 ```
 
 Vous pouvez ensuite passer cette valeur au script :
