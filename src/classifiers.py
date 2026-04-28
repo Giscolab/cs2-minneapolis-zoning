@@ -1,44 +1,66 @@
 """
 classifiers.py
-Density classification logic: OSM tags → CS2 zone types.
 
-Key insight: OSM's landuse=residential is a coarse polygon that covers
-entire neighborhoods. To determine HIGH vs MEDIUM vs LOW density within
-those polygons, we cross-reference building:levels tags from individual
-building footprints. This two-pass strategy is what makes the classification
-realistic instead of assigning uniform density to entire districts.
+Logique de classification :
+tags OpenStreetMap → catégories de zones Cities: Skylines 2.
+
+La classification reste volontairement simple :
+OSM ne fournit pas toujours un vrai zonage urbain officiel.
+On déduit donc une catégorie jouable CS2 à partir des tags disponibles.
 """
+
+
+def parse_levels(value, default: int = 0) -> int:
+    """
+    Convertit building:levels / levels en entier robuste.
+
+    Exemples acceptés :
+    - "5"   -> 5
+    - "3.5" -> 3
+    - "3,5" -> 3
+    - vide / invalide -> default
+    """
+    if value is None:
+        return default
+
+    text = str(value).strip().replace(",", ".")
+    if not text:
+        return default
+
+    try:
+        return int(float(text))
+    except (ValueError, TypeError):
+        return default
 
 
 def classify_residential(tags: dict, building_levels_index: dict, element_id: int) -> str:
     """
-    Classify a residential landuse polygon into CS2 density tiers.
+    Classe une zone résidentielle en haute, moyenne ou basse densité.
 
-    Priority order:
-    1. building:levels or levels tag on the polygon itself
-    2. Max building:levels from buildings indexed within the polygon
-    3. Explicit residential sub-tags (apartments, townhouse, etc.)
-    4. Fallback: low density
-
-    CS2 thresholds (calibrated against real Minneapolis neighborhoods):
-    - HIGH   (>=5 floors OR apartments/condo)  -> North American High Density Residential
-    - MEDIUM (>=3 floors OR terrace/townhouse) -> North American Medium Density Residential
-    - LOW    (default)                         -> North American Low Density Residential
+    Logique adaptée aux villes nord-américaines et européennes :
+    - haute densité : immeubles, appartements, 5 étages ou plus ;
+    - moyenne densité : maisons de ville, dortoirs, 3 à 4 étages ;
+    - basse densité : défaut quand aucune information de densité n’est fiable.
     """
-    tag_levels = int(tags.get("building:levels") or tags.get("levels") or 0)
+    tag_levels = parse_levels(tags.get("building:levels") or tags.get("levels"), 0)
     idx_levels = building_levels_index.get(element_id, 0)
     effective_levels = max(tag_levels, idx_levels)
 
     residential_subtype = tags.get("residential", "").lower()
     building_type = tags.get("building", "").lower()
 
-    if (effective_levels >= 5
-            or residential_subtype in ("apartments", "condominium", "condo")):
+    if (
+        effective_levels >= 5
+        or residential_subtype in ("apartments", "apartment", "condominium", "condo")
+        or building_type in ("apartments", "residential")
+    ):
         return "high"
 
-    if (effective_levels >= 3
-            or building_type in ("terrace", "dormitory", "townhouse")
-            or residential_subtype in ("townhouse", "dormitory", "semi")):
+    if (
+        effective_levels >= 3
+        or building_type in ("terrace", "dormitory", "townhouse", "semidetached_house")
+        or residential_subtype in ("townhouse", "dormitory", "semi", "terrace")
+    ):
         return "medium"
 
     return "low"
@@ -46,25 +68,36 @@ def classify_residential(tags: dict, building_levels_index: dict, element_id: in
 
 def classify_commercial(tags: dict) -> str:
     """
-    Classify commercial zones into HIGH or LOW density.
-
-    CS2 thresholds:
-    - HIGH (>=4 floors) -> North American High Density Commercial
-    - LOW  (default)   -> North American Low Density Commercial
+    Classe une zone commerciale en haute ou basse densité.
     """
-    levels = int(tags.get("building:levels") or tags.get("levels") or 1)
-    return "high" if levels >= 4 else "low"
+    levels = parse_levels(tags.get("building:levels") or tags.get("levels"), 1)
+    building_type = tags.get("building", "").lower()
+    shop = tags.get("shop", "").lower()
+    office = tags.get("office", "").lower()
+
+    if levels >= 4:
+        return "high"
+
+    if building_type in ("commercial", "retail", "office") and levels >= 3:
+        return "high"
+
+    if shop in ("mall", "department_store") or office:
+        return "high"
+
+    return "low"
 
 
 def classify_parking(tags: dict) -> str:
     """
-    Distinguish structured parking (ramps) from surface lots.
-
-    CS2 distinction:
-    - RAMP    -> Parking Garage / Ramp asset
-    - SURFACE -> Surface Parking Lot (counts as no-zone area in gameplay)
+    Distingue parking en ouvrage et parking de surface.
     """
     parking_type = tags.get("parking", "").lower()
+    building_type = tags.get("building", "").lower()
+
     if parking_type in ("multi-storey", "multistorey", "structure", "underground"):
         return "ramp"
+
+    if building_type in ("parking", "garage", "garages"):
+        return "ramp"
+
     return "surface"

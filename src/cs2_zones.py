@@ -1,41 +1,49 @@
 """
 cs2_zones.py
-Mapping between OSM landuse/building tags and Cities: Skylines 2 zone names.
 
-These zone names correspond to the North American zone set in CS2 (base game).
-If you're using a modded zone pack, adjust the values in CS2_LABELS accordingly.
+Définition des zones CS2 et construction des requêtes Overpass.
+
+Format BBOX attendu par Overpass :
+"sud,ouest,nord,est"
+soit :
+"latitude_min,longitude_min,latitude_max,longitude_max"
+
+Exemple Paris :
+"48.766147,2.161560,48.945053,2.485657"
 """
 
 CS2_LABELS = {
-    "res_high":    "North American High Density Residential",
-    "res_med":     "North American Medium Density Residential",
-    "res_low":     "North American Low Density Residential",
-    "com_high":    "North American High Density Commercial",
-    "com_low":     "North American Low Density Commercial",
-    "retail":      "North American Retail Hub",
-    "industrial":  "North American Industrial Zone",
-    "prk_ramp":    "Parking Garage / Ramp",
-    "prk_surface": "Surface Parking Lot",
-    "office":      "Office / Government Building",
-    "mixed":       "Mixed-Use Development",
+    "res_high":    "Résidentiel haute densité",
+    "res_med":     "Résidentiel moyenne densité",
+    "res_low":     "Résidentiel basse densité",
+    "com_high":    "Commercial haute densité",
+    "com_low":     "Commercial basse densité",
+    "retail":      "Commerce de détail",
+    "industrial":  "Industrie",
+    "prk_ramp":    "Parking en ouvrage",
+    "prk_surface": "Parking de surface",
+    "office":      "Bureaux / administration",
+    "mixed":       "Usage mixte",
 }
 
-# Overpass QL query templates.
-# BBOX format: "south,west,north,east" — standard for Overpass QL.
-# Minneapolis full city bbox (with immediate border areas):
-MINNEAPOLIS_BBOX = "44.86,-93.38,45.05,-93.17"
+# Ville d’exemple historique du projet d’origine.
+# Ne doit plus être utilisée comme valeur implicite dans le pipeline.
+EXAMPLE_BBOX_MINNEAPOLIS = "44.86,-93.38,45.05,-93.17"
+
+# Exemple utile pour développement local / tests Europe.
+EXAMPLE_BBOX_PARIS = "48.766147,2.161560,48.945053,2.485657"
 
 
 def build_queries(bbox: str) -> dict:
     """
-    Build all Overpass QL queries for the given bounding box.
+    Construit les requêtes Overpass QL pour une boîte géographique donnée.
 
-    Queries are split by category (not a single mega-query) for two reasons:
-    1. Large single queries time out frequently on public Overpass instances
-    2. Splitting allows per-category retry without re-downloading everything
+    Les requêtes sont séparées par catégorie au lieu d’utiliser une seule
+    requête géante, car les serveurs Overpass publics limitent souvent les
+    grosses requêtes.
 
-    The buildings_levels query runs FIRST as a separate pre-pass to build
-    the density index used by classify_residential().
+    La requête buildings_levels est exécutée en premier afin de construire
+    un index de densité utilisé par la classification résidentielle.
     """
     return {
         "buildings_levels": f"""
@@ -43,6 +51,7 @@ def build_queries(bbox: str) -> dict:
 way["building"="apartments"]["building:levels"]({bbox});
 out ids tags;
 """.strip(),
+
         "residential": f"""
 [out:json][timeout:180];
 (
@@ -51,6 +60,7 @@ out ids tags;
 );
 out geom;
 """.strip(),
+
         "commercial": f"""
 [out:json][timeout:180];
 (
@@ -59,6 +69,7 @@ out geom;
 );
 out geom;
 """.strip(),
+
         "industrial": f"""
 [out:json][timeout:180];
 (
@@ -68,6 +79,7 @@ out geom;
 );
 out geom;
 """.strip(),
+
         "retail": f"""
 [out:json][timeout:180];
 (
@@ -76,6 +88,7 @@ out geom;
 );
 out geom;
 """.strip(),
+
         "parking": f"""
 [out:json][timeout:180];
 (
@@ -84,6 +97,7 @@ out geom;
 );
 out geom;
 """.strip(),
+
         "office": f"""
 [out:json][timeout:180];
 (
@@ -95,6 +109,7 @@ out geom;
 );
 out geom;
 """.strip(),
+
         "mixed": f"""
 [out:json][timeout:180];
 (

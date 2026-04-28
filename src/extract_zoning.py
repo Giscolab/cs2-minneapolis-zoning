@@ -1,25 +1,10 @@
 #!/usr/bin/env python3
 """
-extract_zoning.py — CS2 Minneapolis Zoning Pipeline v1.0
-=========================================================
-Extracts real-world zoning polygons from OpenStreetMap via Overpass API
-and exports them as a JavaScript data file ready to be loaded by the
-Leaflet.js visualizer.
+extract_zoning.py — Pipeline d’extraction de zonage réel pour CS2.
 
-Usage:
-    cd src
-    uv run extract_zoning.py
-    uv run extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17"
-    uv run extract_zoning.py --out ../visualizer/datos_zonificacion.js
-
-Requirements:
-    uv (https://docs.astral.sh/uv/) — no manual pip install needed.
-    Run `uv sync` once, then `uv run extract_zoning.py`.
-
-Output:
-    A .js file containing 7 JavaScript arrays (DATA_RESIDENTIAL,
-    DATA_COMMERCIAL, DATA_INDUSTRIAL, DATA_RETAIL, DATA_PARKING,
-    DATA_OFFICE, DATA_MIXED) ready to be <script src="..."> in index.html.
+Exemples :
+    python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"
+    python extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17" --city "Minneapolis"
 """
 
 import argparse
@@ -29,10 +14,8 @@ from pathlib import Path
 
 from overpass_client import query_with_retry
 from classifiers import classify_residential, classify_commercial, classify_parking
-from cs2_zones import CS2_LABELS, MINNEAPOLIS_BBOX, build_queries
+from cs2_zones import CS2_LABELS, EXAMPLE_BBOX_PARIS, build_queries
 
-
-# ── Geometry helpers ─────────────────────────────────────────────────────────
 
 def coords_from_way(element: dict) -> list | None:
     geom = element.get("geometry", [])
@@ -45,8 +28,7 @@ def coords_from_relation(element: dict) -> list | None:
     members = element.get("members", [])
     outers = [
         m for m in members
-        if m.get("role") == "outer"
-        and len(m.get("geometry", [])) > 2
+        if m.get("role") == "outer" and len(m.get("geometry", [])) > 2
     ]
     if not outers:
         return None
@@ -67,8 +49,7 @@ def parse_building_levels(value) -> int:
         return 0
 
     text = str(value).strip().replace(",", ".")
-
-    if text == "":
+    if not text:
         return 0
 
     try:
@@ -77,32 +58,39 @@ def parse_building_levels(value) -> int:
         return 0
 
 
-# ── Main pipeline ─────────────────────────────────────────────────────────────
-
 def main():
-    parser = argparse.ArgumentParser(description="Extract OSM zoning data for CS2")
+    parser = argparse.ArgumentParser(
+        description="Extrait les données de zonage OpenStreetMap pour Cities: Skylines 2"
+    )
     parser.add_argument(
         "--bbox",
-        default=MINNEAPOLIS_BBOX,
-        help=f"Bounding box 'south,west,north,east' (default: {MINNEAPOLIS_BBOX})"
+        default=EXAMPLE_BBOX_PARIS,
+        help="Boîte géographique au format 'sud,ouest,nord,est'. Par défaut : exemple Paris.",
+    )
+    parser.add_argument(
+        "--city",
+        default="Ville personnalisée",
+        help="Nom de la ville ou zone extraite.",
     )
     parser.add_argument(
         "--out",
         default="../visualizer/datos_zonificacion.js",
-        help="Output .js file path"
+        help="Chemin du fichier JavaScript généré.",
     )
+
     args = parser.parse_args()
 
     bbox = args.bbox
+    city = args.city
     out_path = Path(args.out)
     queries = build_queries(bbox)
 
-    print("CS2 Minneapolis Zoning Extractor v1.0")
-    print(f"Bounding Box : {bbox}")
-    print(f"Output       : {out_path}\n")
+    print("Extracteur de zonage réel pour CS2 v1.0")
+    print(f"Ville / zone : {city}")
+    print(f"BBOX         : {bbox}")
+    print(f"Sortie       : {out_path}\n")
 
-    # ── Step 1: Build density index ───────────────────────────────────────────
-    print("[1/3] Building residential density index...")
+    print("[1/3] Construction de l’index de densité résidentielle...")
     bld_data = query_with_retry(queries["buildings_levels"], "buildings_levels")
     building_index: dict[int, int] = {}
 
@@ -113,26 +101,23 @@ def main():
         if lvl > 0 and "id" in el:
             building_index[el["id"]] = lvl
 
-    print(f"      Index: {len(building_index)} buildings with level data\n")
+    print(f"      Index : {len(building_index)} bâtiments avec données d’étages\n")
 
-    # ── Step 2: Download all polygons ─────────────────────────────────────────
-    print("[2/3] Downloading zoning polygons (7 sequential queries)...")
-    CATEGORIES = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
+    print("[2/3] Téléchargement des polygones de zonage...")
+    categories = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
     raw: dict[str, list] = {}
 
-    for cat in CATEGORIES:
+    for cat in categories:
         result = query_with_retry(queries[cat], cat)
         raw[cat] = result.get("elements", [])
-        print(f"      {cat}: {len(raw[cat])} elements")
+        print(f"      {cat}: {len(raw[cat])} éléments")
 
-    # ── Step 3: Classify ──────────────────────────────────────────────────────
-    print("\n[3/3] Classifying zones...")
+    print("\n[3/3] Classification des zones...")
 
-    output: dict[str, list] = {cat: [] for cat in CATEGORIES}
+    output: dict[str, list] = {cat: [] for cat in categories}
     skipped = 0
     commercial_ids: set[int] = set()
 
-    # Commercial
     for el in raw["commercial"]:
         if "id" in el:
             commercial_ids.add(el["id"])
@@ -154,7 +139,6 @@ def main():
             "cs2": CS2_LABELS[f"com_{zone}"],
         })
 
-    # Residential
     for el in raw["residential"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
@@ -174,7 +158,6 @@ def main():
             "cs2": CS2_LABELS[cs2_key],
         })
 
-    # Industrial
     for el in raw["industrial"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
@@ -191,7 +174,6 @@ def main():
             "cs2": CS2_LABELS["industrial"],
         })
 
-    # Retail
     for el in raw["retail"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
@@ -208,7 +190,6 @@ def main():
             "cs2": CS2_LABELS["retail"],
         })
 
-    # Parking
     for el in raw["parking"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
@@ -227,7 +208,6 @@ def main():
             "cs2": CS2_LABELS[f"prk_{zone}"],
         })
 
-    # Office
     for el in raw["office"]:
         if el.get("id") in commercial_ids:
             continue
@@ -247,7 +227,6 @@ def main():
             "cs2": CS2_LABELS["office"],
         })
 
-    # Mixed
     for el in raw["mixed"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
@@ -264,45 +243,44 @@ def main():
             "cs2": CS2_LABELS["mixed"],
         })
 
-    # ── Summary ───────────────────────────────────────────────────────────────
     total = sum(len(v) for v in output.values())
     res = output["residential"]
     com = output["commercial"]
 
-    print(f"\n  Residential  high/med/low : "
-          f"{sum(1 for r in res if r['zone']=='high')} / "
-          f"{sum(1 for r in res if r['zone']=='medium')} / "
-          f"{sum(1 for r in res if r['zone']=='low')}")
+    print(f"\n  Résidentiel haut/moyen/bas : "
+          f"{sum(1 for r in res if r['zone'] == 'high')} / "
+          f"{sum(1 for r in res if r['zone'] == 'medium')} / "
+          f"{sum(1 for r in res if r['zone'] == 'low')}")
 
-    print(f"  Commercial   high/low     : "
-          f"{sum(1 for c in com if c['zone']=='high')} / "
-          f"{sum(1 for c in com if c['zone']=='low')}")
+    print(f"  Commercial haut/bas        : "
+          f"{sum(1 for c in com if c['zone'] == 'high')} / "
+          f"{sum(1 for c in com if c['zone'] == 'low')}")
 
     for cat in ["industrial", "retail", "parking", "office", "mixed"]:
-        print(f"  {cat:<12}             : {len(output[cat])}")
+        print(f"  {cat:<12}              : {len(output[cat])}")
 
-    print(f"  Skipped (no geometry)     : {skipped}")
-    print(f"  TOTAL                     : {total}")
+    print(f"  Ignorés sans géométrie     : {skipped}")
+    print(f"  TOTAL                      : {total}")
 
-    # ── Write output ──────────────────────────────────────────────────────────
     ts = datetime.now(timezone.utc).isoformat()
 
     lines = [
-        f"// Auto-generated by extract_zoning.py — {ts}",
-        f"// Minneapolis Zoning v1.0 — bbox: {bbox}",
-        f"// Total polygons: {total}",
+        f"// Généré par extract_zoning.py — {ts}",
+        f"// Ville / zone : {city}",
+        f"// BBOX : {bbox}",
+        f"// Total polygones : {total}",
         "",
     ]
 
-    for cat in CATEGORIES:
+    for cat in categories:
         var = f"DATA_{cat.upper()}"
-        lines.append(f"const {var} = {json.dumps(output[cat])};")
+        lines.append(f"const {var} = {json.dumps(output[cat], ensure_ascii=False)};")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
     size_mb = out_path.stat().st_size / (1024 * 1024)
 
-    print(f"\nDone. {out_path} — {size_mb:.1f} MB — {total} polygons")
+    print(f"\nTerminé. {out_path} — {size_mb:.1f} MB — {total} polygones")
 
 
 if __name__ == "__main__":
