@@ -24,7 +24,6 @@ Output:
 
 import argparse
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,9 +55,26 @@ def coords_from_relation(element: dict) -> list | None:
 
 
 def extract_coords(element: dict) -> list | None:
-    if element["type"] == "way":
+    if element.get("type") == "way":
         return coords_from_way(element)
-    return coords_from_relation(element)
+    if element.get("type") == "relation":
+        return coords_from_relation(element)
+    return None
+
+
+def parse_building_levels(value) -> int:
+    if value is None:
+        return 0
+
+    text = str(value).strip().replace(",", ".")
+
+    if text == "":
+        return 0
+
+    try:
+        return int(float(text))
+    except (ValueError, TypeError):
+        return 0
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────────────
@@ -81,7 +97,7 @@ def main():
     out_path = Path(args.out)
     queries = build_queries(bbox)
 
-    print(f"CS2 Minneapolis Zoning Extractor v1.0")
+    print("CS2 Minneapolis Zoning Extractor v1.0")
     print(f"Bounding Box : {bbox}")
     print(f"Output       : {out_path}\n")
 
@@ -89,16 +105,21 @@ def main():
     print("[1/3] Building residential density index...")
     bld_data = query_with_retry(queries["buildings_levels"], "buildings_levels")
     building_index: dict[int, int] = {}
+
     for el in bld_data.get("elements", []):
-        lvl = int((el.get("tags") or {}).get("building:levels", 0))
-        if lvl > 0:
+        tags = el.get("tags") or {}
+        lvl = parse_building_levels(tags.get("building:levels"))
+
+        if lvl > 0 and "id" in el:
             building_index[el["id"]] = lvl
+
     print(f"      Index: {len(building_index)} buildings with level data\n")
 
     # ── Step 2: Download all polygons ─────────────────────────────────────────
     print("[2/3] Downloading zoning polygons (7 sequential queries)...")
     CATEGORIES = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
     raw: dict[str, list] = {}
+
     for cat in CATEGORIES:
         result = query_with_retry(queries[cat], cat)
         raw[cat] = result.get("elements", [])
@@ -111,106 +132,132 @@ def main():
     skipped = 0
     commercial_ids: set[int] = set()
 
-    # Commercial must run first to build dedup set for office pass
+    # Commercial
     for el in raw["commercial"]:
-        commercial_ids.add(el["id"])
+        if "id" in el:
+            commercial_ids.add(el["id"])
+
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         zone = classify_commercial(tags)
+
         output["commercial"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": zone,
             "cs2": CS2_LABELS[f"com_{zone}"],
         })
 
+    # Residential
     for el in raw["residential"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
-        zone = classify_residential(tags, building_index, el["id"])
+
+        zone = classify_residential(tags, building_index, el.get("id"))
         cs2_key = {"high": "res_high", "medium": "res_med", "low": "res_low"}[zone]
+
         output["residential"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": zone,
             "cs2": CS2_LABELS[cs2_key],
         })
 
+    # Industrial
     for el in raw["industrial"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         output["industrial"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": "industrial",
             "cs2": CS2_LABELS["industrial"],
         })
 
+    # Retail
     for el in raw["retail"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         output["retail"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": "retail",
             "cs2": CS2_LABELS["retail"],
         })
 
+    # Parking
     for el in raw["parking"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         zone = classify_parking(tags)
+
         output["parking"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": zone,
             "cs2": CS2_LABELS[f"prk_{zone}"],
         })
 
+    # Office
     for el in raw["office"]:
-        if el["id"] in commercial_ids:
-            continue  # deduplicate office areas already captured as commercial
+        if el.get("id") in commercial_ids:
+            continue
+
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         output["office"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": "office",
             "cs2": CS2_LABELS["office"],
         })
 
+    # Mixed
     for el in raw["mixed"]:
         tags = el.get("tags") or {}
         coords = extract_coords(el)
+
         if not coords:
             skipped += 1
             continue
+
         output["mixed"].append({
-            "id": el["id"],
+            "id": el.get("id"),
             "name": tags.get("name", ""),
             "coords": coords,
             "zone": "mixed",
@@ -220,27 +267,33 @@ def main():
     # ── Summary ───────────────────────────────────────────────────────────────
     total = sum(len(v) for v in output.values())
     res = output["residential"]
+    com = output["commercial"]
+
     print(f"\n  Residential  high/med/low : "
           f"{sum(1 for r in res if r['zone']=='high')} / "
           f"{sum(1 for r in res if r['zone']=='medium')} / "
           f"{sum(1 for r in res if r['zone']=='low')}")
-    com = output["commercial"]
+
     print(f"  Commercial   high/low     : "
           f"{sum(1 for c in com if c['zone']=='high')} / "
           f"{sum(1 for c in com if c['zone']=='low')}")
+
     for cat in ["industrial", "retail", "parking", "office", "mixed"]:
         print(f"  {cat:<12}             : {len(output[cat])}")
+
     print(f"  Skipped (no geometry)     : {skipped}")
     print(f"  TOTAL                     : {total}")
 
     # ── Write output ──────────────────────────────────────────────────────────
     ts = datetime.now(timezone.utc).isoformat()
+
     lines = [
         f"// Auto-generated by extract_zoning.py — {ts}",
         f"// Minneapolis Zoning v1.0 — bbox: {bbox}",
         f"// Total polygons: {total}",
         "",
     ]
+
     for cat in CATEGORIES:
         var = f"DATA_{cat.upper()}"
         lines.append(f"const {var} = {json.dumps(output[cat])};")
@@ -248,6 +301,7 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines), encoding="utf-8")
     size_mb = out_path.stat().st_size / (1024 * 1024)
+
     print(f"\nDone. {out_path} — {size_mb:.1f} MB — {total} polygons")
 
 
