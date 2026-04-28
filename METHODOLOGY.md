@@ -271,7 +271,7 @@ latitude_min,longitude_min,latitude_max,longitude_max
 | Ville | Commande |
 |:------|:---------|
 | **Paris** | `python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"` |
-| **Minneapolis** | `python extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17" --city "Minneapolis"` |
+| **New York** | `python extract_zoning.py --bbox "40.70,-74.02,40.83,-73.91" --city "New York"` |
 
 ---
 
@@ -313,7 +313,7 @@ Le projet vise à devenir un **extracteur générique de zonage réel** pour Cit
 
 <div align="center">
 
-📄 *Documentation technique — Projet CS2 Real Zoning Extractor*  
+📄 *Documentation technique — Projet d'extraction CS2 de zonage réel*  
 📝 Sous licence MIT
 
 </div>

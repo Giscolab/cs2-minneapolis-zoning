@@ -4,7 +4,7 @@ extract_zoning.py — Pipeline d’extraction de zonage réel pour CS2.
 
 Exemples :
     python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"
-    python extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17" --city "Minneapolis"
+    python extract_zoning.py --bbox "40.70,-74.02,40.83,-73.91" --city "New York"
 """
 
 import argparse

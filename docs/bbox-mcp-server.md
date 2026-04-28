@@ -17,7 +17,7 @@ Dans ce contexte, `bbox-mcp-server` peut aider à répondre à des questions com
 
 ```text
 Quelle est la bounding box de Portland, Oregon ?
-Cherche les parcs dans le centre de Minneapolis.
+Cherche les parcs dans le centre de Lyon.
 Récupère des données OSM pour une zone donnée.
 ```
 

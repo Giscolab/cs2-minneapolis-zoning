@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏙️ CS2 Real Zoning Extractor
+# 🏙️ Extracteur CS2 de zonage réel
 ## Extracteur SIG de zonage réel v1.0
 
 > **Données de zonage issues d'OpenStreetMap → Cities: Skylines 2**  

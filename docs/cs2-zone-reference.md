@@ -124,7 +124,7 @@ La logique de classification dans `src/classifiers.py` reste indépendante des n
 
 <div align="center">
 
-📄 *Référence des zones — Projet CS2 Real Zoning Extractor*
+📄 *Référence des zones — Projet d'extraction CS2 de zonage réel*
 📝 Sous licence MIT
 
 </div>
