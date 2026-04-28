@@ -1,152 +1,319 @@
-# Methodology — CS2 Minneapolis Zoning Pipeline
+<div align="center">
 
-Technical documentation for every design decision in this pipeline.
+# 📐 Méthodologie
+## Pipeline d'extraction de zonage réel pour CS2
+
+*Documentation technique des principaux choix de conception du projet.*
 
 ---
 
-## 1. The Problem: Overpass API 504 Timeouts
+</div>
 
-The Overpass API is a free, community-run service that allows querying OpenStreetMap data by geographic area. The natural first approach — one query that fetches all zoning types at once — fails consistently for city-sized bounding boxes:
+## 📌 Table des matières
 
+1. [Problème : limites et timeouts de l'API Overpass](#1-problème--limites-et-timeouts-de-lapi-overpass)
+2. [Solution : requêtes séquentielles par catégorie](#2-solution--requêtes-séquentielles-par-catégorie)
+3. [Stratégie d'index de densité résidentielle](#3-stratégie-dindex-de-densité-résidentielle)
+4. [Rotation multi-serveurs Overpass](#4-rotation-multi-serveurs-overpass)
+5. [Correspondance OSM → CS2](#5-correspondance-osm--cs2)
+6. [Déduplication commercial / bureaux](#6-déduplication-commercial--bureaux)
+7. [Pourquoi pas QGIS, PostGIS ou GeoPandas ?](#7-pourquoi-pas-qgis-postgis-ou-geopandas-)
+8. [Adaptation à n'importe quelle ville](#8-adaptation-à-nimporte-quelle-ville)
+9. [Qualité des données OpenStreetMap](#9-qualité-des-données-openstreetmap)
+10. [Objectif à long terme](#10-objectif-à-long-terme)
+
+---
+
+## 1. Problème : limites et timeouts de l'API Overpass
+
+L'API Overpass est un service communautaire gratuit permettant d'interroger les données OpenStreetMap par zone géographique.
+
+L'approche naïve consiste à faire une seule grosse requête pour récupérer tous les types de zonage. En pratique, cette méthode échoue souvent sur des zones urbaines larges :
+
+```text
+❌ HTTP 504 Gateway Timeout
 ```
-HTTP 504 Gateway Timeout
-```
 
-This happens because:
-- The Minneapolis bbox (`44.86,-93.38,45.05,-93.17`) covers ~350 km²
-- A single query requesting all landuse types returns 5-10 MB of JSON
-- Public Overpass instances enforce strict timeouts (120-180s) to prevent abuse
-- Large queries hit those timeouts even when the server isn't under heavy load
+### 🔴 Causes principales
 
-## 2. Solution: Sequential Chunked Queries
+| Cause | Explication |
+|:------|:------------|
+| Surface trop grande | Une ville complète peut couvrir une grande surface |
+| Réponse volumineuse | Une requête unique peut produire plusieurs mégaoctets de JSON |
+| Délais stricts | Les serveurs Overpass publics imposent des délais stricts |
+| Instabilité | Les grosses requêtes peuvent échouer même quand le serveur fonctionne correctement |
 
-Instead of one mega-query, this pipeline runs 8 sequential queries — one per zone category:
+---
 
-```
+## 2. Solution : requêtes séquentielles par catégorie
+
+Le pipeline exécute plusieurs requêtes séparées :
+
+```text
 buildings_levels → residential → commercial → industrial →
 retail → parking → office → mixed
 ```
 
-**Why this works:**
-- Each category returns 200-800 KB instead of 5+ MB
-- Smaller payloads complete well within the timeout window
-- If one category fails, only that category is retried (not everything)
-- Progress is visible: users can see each category download in real time
+### ✅ Avantages
 
-**Trade-off:** 8 round-trips instead of 1, adding ~2 minutes of network overhead. This is acceptable because the alternative is unreliable failures.
+- Chaque réponse est plus petite
+- Les timeouts sont moins fréquents
+- Une catégorie échouée peut être relancée seule
+- L'utilisateur voit la progression en temps réel
 
-## 3. The Density Index Strategy
+### ⚠️ Inconvénient
 
-`landuse=residential` in OSM is a coarse polygon covering entire neighborhoods. A single polygon might span 20 city blocks. OSM doesn't distinguish "high density downtown" from "low density suburbs" at the landuse level — that granularity lives in the individual building footprints tagged with `building:levels`.
+- Plusieurs allers-retours réseau au lieu d'un seul
 
-**The two-pass approach:**
+> 💡 **Ce compromis est préférable à une requête unique instable.**
 
-**Pass 1 (buildings_levels query):** Download all apartment buildings (`building=apartments`) that have a `building:levels` tag. Build an in-memory index: `{element_id: max_floor_count}`.
+---
 
-**Pass 2 (residential query):** For each residential polygon, look up whether any buildings within it appear in the index. Use the highest floor count to determine density tier:
-- ≥5 floors → High Density Residential
-- ≥3 floors → Medium Density Residential  
-- default → Low Density Residential
+## 3. Stratégie d'index de densité résidentielle
 
-**Why not spatial joins?** A proper spatial join (polygon-contains-point) would require GeoPandas or PostGIS. The proxy approach — using the OSM element ID to correlate buildings tagged within the same neighborhood area — is a simplification that works well enough for CS2 gameplay purposes. The goal is visual accuracy on a game map, not census precision.
+Dans OpenStreetMap, `landuse=residential` décrit souvent un quartier entier. Ce tag ne suffit pas à distinguer :
 
-**Calibration for Minneapolis:** The ≥5 and ≥3 floor thresholds were calibrated by visually comparing the output map against known Minneapolis neighborhood characteristics:
-- Uptown, Dinkytown, Stevens Square → high density (5+ floor apartment buildings)
-- Seward, Powderhorn, Longfellow → medium density (3-4 floor townhouses)
-- Southwest Minneapolis, Linden Hills → low density (single-family homes)
+- 🏙️ Centre-ville dense
+- 🏢 Quartier d'immeubles
+- 🏡 Pavillonnaire
+- 🏘️ Maisons de ville
 
-Other cities may need different thresholds. See `src/classifiers.py` to adjust.
+La densité est donc déduite à partir des bâtiments et de leurs tags, notamment :
 
-## 4. Multi-Endpoint Rotation with Exponential Backoff
-
-The pipeline rotates across 4 community Overpass endpoints:
-
-| Endpoint | Operator |
-|----------|----------|
-| `overpass-api.de` | Official OpenStreetMap Foundation |
-| `overpass.kumi.systems` | Kumi Systems (community) |
-| `overpass.openstreetmap.ru` | OpenStreetMap Russia |
-| `maps.mail.ru/osm/tools/overpass` | Mail.ru Group |
-
-**Retry strategy:**
-- Attempt each endpoint per round
-- Wait 3s between attempts on round 1
-- Wait 6s between attempts on round 2 (backoff ×2)
-- Wait 12s between attempts on round 3
-- Raise `RuntimeError` only after all 4 endpoints × 3 rounds = 12 total attempts fail
-
-This effectively eliminates timeouts caused by a single overloaded endpoint. In testing across multiple extraction runs, this strategy achieved 100% success rate.
-
-## 5. OSM → CS2 Mapping Decisions
-
-**Residential density thresholds (≥5 / ≥3 floors):**  
-Chosen to match Minneapolis's actual building stock. Downtown and Uptown have buildings in the 5-20 story range; midtown neighborhoods have 3-4 story walkups; the outer ring is almost entirely 1-2 story single-family homes.
-
-**Commercial threshold (≥4 floors for high density):**  
-CS2's High Density Commercial represents office towers and major retail blocks. 4+ floors captures downtown core, Nicollet Mall, and major commercial corridors without over-classifying small strip malls.
-
-**Retail as separate category:**  
-`landuse=retail` in OSM maps specifically to shopping centers and retail corridors. In CS2, the "Retail Hub" zone has distinct gameplay behavior (higher traffic, different service needs) that justifies keeping it separate from general commercial.
-
-**Parking split (ramp vs surface):**  
-CS2 treats parking ramps as placeable assets with different road connection requirements than surface lots. The `parking=multi-storey` tag in OSM maps cleanly to this distinction.
-
-**Office deduplication:**  
-OSM taggers sometimes apply both `landuse=commercial` and `building=office` to the same element. The pipeline processes commercial first, builds a set of captured IDs, and skips those IDs when processing office — preventing the same polygon from appearing twice on the map.
-
-## 6. Commercial/Office Deduplication
-
-OSM has overlapping semantics for commercial areas and office buildings. A downtown block might be tagged as both `landuse=commercial` (area-level) and `building=office` (building-level). Processing both without deduplication creates overlapping polygons that appear double-colored in Leaflet.
-
-**Solution:** Process `commercial` first. Any element ID captured in that pass is excluded from the `office` pass. This prioritizes the landuse classification (which covers the full area) over the building tag (which may cover only part of it).
-
-## 7. Why Not QGIS or PostGIS?
-
-Several more powerful alternatives exist for this kind of spatial analysis:
-
-- **QGIS:** GUI-based, excellent for visual workflows, but not scriptable in a reproducible way
-- **PostGIS:** Industrial-strength spatial queries, but requires a PostgreSQL server setup
-- **GeoPandas:** Python library for geospatial DataFrames, but adds ~500 MB of dependencies (GDAL, Shapely, Fiona)
-
-This pipeline chose none of them for a specific reason: **zero barrier to entry**.
-
-The goal was a tool that any CS2 player could run without installing a database, loading shapefiles, or understanding GIS concepts. The pipeline works with only `requests` and `tqdm` as dependencies. Anyone with Python can run it in 5 minutes.
-
-The classification accuracy lost by not doing true spatial joins is acceptable for a game map visualization. OSM's element IDs are used as a proxy for spatial containment — not perfect, but good enough.
-
-## 8. LLM Token Budget Management
-
-This project was developed with AI assistance (Claude Code). One interesting challenge was managing the token context window when iterating on the pipeline.
-
-The original Node.js script (`src/legacy/descargar_zonificacion.js`) was written in a single session. When porting to Python and adding the multi-endpoint retry and density classification, the approach used was **sequential chunked development**:
-
-1. Write and test `overpass_client.py` in isolation (small context)
-2. Write and test `classifiers.py` in isolation (small context)
-3. Write `cs2_zones.py` with the query templates (small context)
-4. Write `extract_zoning.py` importing the above modules (full context only at integration)
-
-This mirrors the chunked query strategy: just as splitting Overpass queries avoids timeouts, splitting the code into modules avoided context window saturation during development. Each module could be reasoned about and debugged with a focused, small context before being integrated.
-
-## 9. Adapting to Any City
-
-The pipeline is city-agnostic. Any city with reasonable OSM coverage will work.
-
-**Step 1: Get the bounding box**
-
-Use [Nominatim](https://nominatim.openstreetmap.org/):
+```text
+building:levels
+levels
+building=apartments
+building=terrace
+building=townhouse
 ```
-https://nominatim.openstreetmap.org/search?q=Chicago,IL&format=json&limit=1
+
+### Approche en deux passes
+
+#### 🔄 Passe 1
+
+Téléchargement des bâtiments avec informations d'étages.
+
+Un index mémoire est construit :
+
+```python
+{element_id: nombre_etages}
 ```
-The response includes a `boundingbox` field: `[south, north, west, east]`.
 
-Note: Overpass QL uses `south,west,north,east` order — swap accordingly.
+#### 🔄 Passe 2
 
-**Step 2: Consider OSM coverage quality**
+Classification des zones résidentielles en fonction :
 
-North American and Western European cities have excellent OSM coverage including building heights. Cities in other regions may have fewer `building:levels` tags, which will cause most residential to fall back to "low density." This is a data limitation, not a pipeline limitation.
+- des étages indiqués sur la zone
+- des étages indexés
+- du type résidentiel
+- du type de bâtiment
 
-**Step 3: Calibrate thresholds**
+### 📊 Seuils actuels
 
-Run the pipeline once, open the visualizer, and visually compare against Google Maps satellite view. If your city's dense downtown is showing as low density, lower the `≥5` threshold. If suburban areas are showing as medium density, raise the `≥3` threshold.
+| Seuil | Classification | Description |
+|:------|:---------------|:------------|
+| **≥5 étages** | 🏢 Résidentiel haute densité | Immeubles, appartements |
+| **≥3 étages** | 🏘️ Résidentiel moyenne densité | Maisons de ville, petits collectifs |
+| **défaut** | 🏡 Résidentiel basse densité | Pavillonnaire |
 
-See [docs/adapting-to-other-cities.md](docs/adapting-to-other-cities.md) for a complete 5-step walkthrough.
+> ⚙️ Ces seuils sont simples et doivent rester ajustables dans :  
+> `src/classifiers.py`
+
+---
+
+## 4. Rotation multi-serveurs Overpass
+
+Le pipeline utilise plusieurs serveurs Overpass publics :
+
+| Serveur | Type | Statut |
+|:--------|:-----|:------:|
+| `overpass-api.de` | Instance principale | 🟢 |
+| `overpass.kumi.systems` | Instance communautaire | 🟢 |
+| `overpass.openstreetmap.ru` | Instance communautaire | 🟢 |
+| `maps.mail.ru/osm/tools/overpass` | Instance communautaire | 🟢 |
+
+### 🔄 Stratégie
+
+```text
+1. Essayer un serveur
+   ↓
+2. Passer au suivant en cas d'échec
+   ↓
+3. Attendre progressivement entre les tentatives
+   ↓
+4. Abandonner seulement après échec de tous les serveurs
+```
+
+> ✅ Cette méthode réduit les blocages dus à un serveur temporairement saturé.
+
+---
+
+## 5. Correspondance OSM → CS2
+
+> ⚠️ Le projet ne prétend pas produire un zonage administratif officiel. Il produit une **interprétation jouable** pour Cities: Skylines 2.
+
+### 🏠 Résidentiel
+
+```text
+🏢 haute densité   → immeubles, appartements, 5 étages ou plus
+🏘️ moyenne densité → maisons de ville, petits collectifs, 3 à 4 étages
+🏡 basse densité   → défaut
+```
+
+### 🏬 Commercial
+
+```text
+🏢 haute densité → grands bâtiments, bureaux, centres commerciaux
+🏪 basse densité → commerces de proximité
+```
+
+### 🛒 Commerce de détail
+
+`landuse=retail` est gardé séparément, car il correspond souvent à des zones commerciales identifiables.
+
+### 🅿️ Parkings
+
+Les parkings sont séparés en deux catégories :
+
+```text
+🅿️ parking en ouvrage → parking à étages / souterrain
+🅿️ parking de surface → stationnement au sol
+```
+
+### 🏢 Bureaux
+
+Les bureaux peuvent être présents via :
+
+```text
+building=office
+office=*
+landuse=office
+```
+
+> 🔄 Un mécanisme évite de compter deux fois les mêmes objets quand ils apparaissent aussi en commercial.
+
+---
+
+## 6. Déduplication commercial / bureaux
+
+OpenStreetMap peut contenir plusieurs tags sur le même objet.
+
+### Exemple
+
+```text
+landuse=commercial
+building=office
+```
+
+❌ Sans déduplication, le visualiseur afficherait deux polygones superposés.
+
+### ✅ Solution actuelle
+
+```text
+1. Traiter commercial d'abord
+   ↓
+2. Mémoriser les identifiants OSM
+   ↓
+3. Ignorer ces mêmes identifiants dans la passe office
+```
+
+---
+
+## 7. Pourquoi pas QGIS, PostGIS ou GeoPandas ?
+
+Ces outils sont puissants, mais ils ajoutent de la complexité.
+
+### 📊 Comparaison des approches
+
+| Outil | Avantage | Inconvénient | Verdict |
+|:------|:---------|:-------------|:--------|
+| **QGIS** | Très bon outil SIG visuel | Moins adapté à un pipeline léger et reproductible pour joueur CS2 | ❌ |
+| **PostGIS** | Très robuste | Nécessite PostgreSQL et une configuration serveur | ❌ |
+| **GeoPandas** | Très puissant | Ajoute de nombreuses dépendances lourdes : GDAL, Shapely, Fiona, etc. | ❌ |
+
+### 🎯 Philosophie du projet
+
+```text
+✅ installation simple
+✅ peu de dépendances
+✅ exécution locale rapide
+✅ compréhension facile
+```
+
+### 📦 Dépendances actuelles
+
+| Package | Version | Usage |
+|:--------|:--------|:------|
+| `requests` | *latest* | Requêtes HTTP |
+| `tqdm` | *latest* | Barres de progression |
+
+---
+
+## 8. Adaptation à n'importe quelle ville
+
+Le pipeline est **générique**.
+
+Il faut fournir une boîte géographique au format Overpass :
+
+```text
+sud,ouest,nord,est
+```
+
+Soit :
+
+```text
+latitude_min,longitude_min,latitude_max,longitude_max
+```
+
+### 🌍 Exemples
+
+| Ville | Commande |
+|:------|:---------|
+| **Paris** | `python extract_zoning.py --bbox "48.766147,2.161560,48.945053,2.485657" --city "Paris"` |
+| **Minneapolis** | `python extract_zoning.py --bbox "44.86,-93.38,45.05,-93.17" --city "Minneapolis"` |
+
+---
+
+## 9. Qualité des données OpenStreetMap
+
+La qualité du résultat dépend directement de la qualité des données OSM.
+
+Les villes bien couvertes donnent de meilleurs résultats, surtout si les bâtiments possèdent :
+
+```text
+building:levels
+building
+landuse
+amenity
+office
+shop
+```
+
+> ⚠️ Dans les zones où les hauteurs de bâtiments sont peu renseignées, beaucoup de résidentiel peut tomber en basse densité par défaut.
+>
+> Ce n'est **pas une erreur du pipeline** : c'est une **limite de la donnée source**.
+
+---
+
+## 10. Objectif à long terme
+
+Le projet vise à devenir un **extracteur générique de zonage réel** pour Cities: Skylines 2.
+
+### 🗺️ Axes d'amélioration
+
+- [ ] Profils de classification par région
+- [ ] Meilleure prise en charge des villes européennes
+- [ ] Interface multilingue
+- [ ] Détection plus fine de l'usage mixte
+- [ ] Export de presets par ville
+- [ ] Meilleure documentation pour les créateurs de cartes CS2
+
+---
+
+<div align="center">
+
+📄 *Documentation technique — Projet CS2 Real Zoning Extractor*  
+📝 Sous licence MIT
+
+</div>

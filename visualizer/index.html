@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="fr">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CS2 Zonificación — Minneapolis MN</title>
+  <title>CS2 Zonage Réel — Visualiseur</title>
   <style>
 /* required styles */
 
@@ -848,15 +848,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
 </head>
 <body>
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CS2 Zonage Réel — Visualiseur</title>
+</head>
+<body>
+
 <div id="data-warning" style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: rgba(20, 20, 25, 0.9); color: white; padding: 15px 25px; border-radius: 8px; border: 1px solid #333; font-family: sans-serif; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-  <h3 style="margin: 0 0 10px 0; color: #4facfe;">Mapa de Demostración Vacío</h3>
-  <p style="margin: 0; font-size: 14px; color: #ccc;">Para ver los datos reales de zonificación, debes clonar este repositorio y ejecutar <code>extract_zoning.py</code> localmente.</p>
-  <button onclick="document.getElementById('data-warning').style.display='none'" style="margin-top: 10px; background: #333; border: 1px solid #555; color: white; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Entendido</button>
-</div>	
+  <h3 style="margin: 0 0 10px 0; color: #4facfe;">Carte de démonstration vide</h3>
+  <p style="margin: 0; font-size: 14px; color: #ccc;">Pour afficher les données réelles de zonage, clonez ce dépôt puis exécutez <code>extract_zoning.py</code> localement.</p>
+  <button onclick="document.getElementById('data-warning').style.display='none'" style="margin-top: 10px; background: #333; border: 1px solid #555; color: white; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Compris</button>
+</div>
 
 <div id="loading">
   <div class="load-ring"></div>
-  <div class="load-text">Cargando capas de Minneapolis…</div>
+  <div class="load-text">Chargement des couches de zonage…</div>
 </div>
 
 <!-- GLASSMORPHISM PANEL -->
@@ -864,35 +873,35 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="panel-header">
     <div class="panel-logo">🏙️</div>
     <div>
-      <div class="panel-title">CS2 Zoning Guide</div>
-      <div class="panel-subtitle">MINNEAPOLIS, MN · DATOS OSM REALES</div>
+      <div class="panel-title">Guide de zonage CS2</div>
+      <div class="panel-subtitle">DONNÉES RÉELLES OPENSTREETMAP</div>
     </div>
   </div>
 
-  <div class="section-label">Capas de Zonificación</div>
+  <div class="section-label">Couches de zonage</div>
 
   <!-- Residential -->
   <div class="layer-item" id="toggle-res-high" onclick="toggleLayer('res_high')">
     <div class="layer-swatch" style="background:#006400"></div>
     <div class="layer-info">
-      <div class="layer-name">Residencial Alta Densidad</div>
-      <div class="layer-sub">Torres & Apartamentos</div>
+      <div class="layer-name">Résidentiel haute densité</div>
+      <div class="layer-sub">Immeubles & appartements</div>
     </div>
     <div class="toggle-btn active" id="btn-res-high"></div>
   </div>
   <div class="layer-item" id="toggle-res-med" onclick="toggleLayer('res_med')">
     <div class="layer-swatch" style="background:#228B22"></div>
     <div class="layer-info">
-      <div class="layer-name">Residencial Densidad Media</div>
-      <div class="layer-sub">Row Houses & Dúplex</div>
+      <div class="layer-name">Résidentiel moyenne densité</div>
+      <div class="layer-sub">Maisons de ville & petits collectifs</div>
     </div>
     <div class="toggle-btn active" id="btn-res-med"></div>
   </div>
   <div class="layer-item" id="toggle-res-low" onclick="toggleLayer('res_low')">
     <div class="layer-swatch" style="background:#5a9e2f"></div>
     <div class="layer-info">
-      <div class="layer-name">Residencial Baja Densidad</div>
-      <div class="layer-sub">Suburbios unifamiliares</div>
+      <div class="layer-name">Résidentiel basse densité</div>
+      <div class="layer-sub">Maisons individuelles & quartiers peu denses</div>
     </div>
     <div class="toggle-btn active" id="btn-res-low"></div>
   </div>
@@ -901,24 +910,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="layer-item" id="toggle-com-high" onclick="toggleLayer('com_high')">
     <div class="layer-swatch" style="background:#1a4bc4"></div>
     <div class="layer-info">
-      <div class="layer-name">Comercial Alta Densidad</div>
-      <div class="layer-sub">Rascacielos & Oficinas Core</div>
+      <div class="layer-name">Commercial haute densité</div>
+      <div class="layer-sub">Centres d’affaires & grands bâtiments</div>
     </div>
     <div class="toggle-btn active" id="btn-com-high"></div>
   </div>
   <div class="layer-item" id="toggle-com-low" onclick="toggleLayer('com_low')">
     <div class="layer-swatch" style="background:#4da6ff"></div>
     <div class="layer-info">
-      <div class="layer-name">Comercial Baja Densidad</div>
-      <div class="layer-sub">Tiendas de barrio</div>
+      <div class="layer-name">Commercial basse densité</div>
+      <div class="layer-sub">Commerces de proximité</div>
     </div>
     <div class="toggle-btn active" id="btn-com-low"></div>
   </div>
   <div class="layer-item" id="toggle-retail" onclick="toggleLayer('retail')">
     <div class="layer-swatch" style="background:#6ab4f7"></div>
     <div class="layer-info">
-      <div class="layer-name">Retail</div>
-      <div class="layer-sub">Zonas retail / landuse:retail</div>
+      <div class="layer-name">Commerce de détail</div>
+      <div class="layer-sub">Zones commerciales / landuse:retail</div>
     </div>
     <div class="toggle-btn active" id="btn-retail"></div>
   </div>
@@ -927,28 +936,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="layer-item" id="toggle-industrial" onclick="toggleLayer('industrial')">
     <div class="layer-swatch" style="background:#c8a000"></div>
     <div class="layer-info">
-      <div class="layer-name">Industrial</div>
-      <div class="layer-sub">Fábricas, almacenes, depósitos</div>
+      <div class="layer-name">Industrie</div>
+      <div class="layer-sub">Usines, entrepôts, zones logistiques</div>
     </div>
     <div class="toggle-btn active" id="btn-industrial"></div>
   </div>
 
-  <!-- Oficinas -->
+  <!-- Offices -->
   <div class="layer-item" id="toggle-office" onclick="toggleLayer('office')">
     <div class="layer-swatch" style="background:#9b59b6; box-shadow: 0 0 6px #9b59b6"></div>
     <div class="layer-info">
-      <div class="layer-name">Oficinas</div>
-      <div class="layer-sub">Office · Gov · Corporate</div>
+      <div class="layer-name">Bureaux</div>
+      <div class="layer-sub">Bureaux · Administration · Tertiaire</div>
     </div>
     <div class="toggle-btn active" id="btn-office"></div>
   </div>
 
-  <!-- Uso Mixto -->
+  <!-- Mixed -->
   <div class="layer-item" id="toggle-mixed" onclick="toggleLayer('mixed')">
     <div class="layer-swatch" style="background:#00e5ff; box-shadow: 0 0 6px #00e5ff"></div>
     <div class="layer-info">
-      <div class="layer-name">Uso Mixto</div>
-      <div class="layer-sub">Comercio + Residencial</div>
+      <div class="layer-name">Usage mixte</div>
+      <div class="layer-sub">Commerces + logements</div>
     </div>
     <div class="toggle-btn active" id="btn-mixed"></div>
   </div>
@@ -957,53 +966,53 @@ svg.leaflet-image-layer.leaflet-interactive path {
   <div class="layer-item" id="toggle-prk-ramp" onclick="toggleLayer('prk_ramp')">
     <div class="layer-swatch" style="background:#39ff14; box-shadow: 0 0 6px #39ff14"></div>
     <div class="layer-info">
-      <div class="layer-name">⚡ Parking Ramps</div>
-      <div class="layer-sub">Multi-storey · Downtown</div>
+      <div class="layer-name">⚡ Parkings en ouvrage</div>
+      <div class="layer-sub">Parkings à étages · souterrains</div>
     </div>
     <div class="toggle-btn active" id="btn-prk-ramp"></div>
   </div>
   <div class="layer-item" id="toggle-prk-surface" onclick="toggleLayer('prk_surface')">
     <div class="layer-swatch" style="background:#b0ff5a"></div>
     <div class="layer-info">
-      <div class="layer-name">Parking Surface</div>
-      <div class="layer-sub">Estacionamientos a nivel</div>
+      <div class="layer-name">Parkings de surface</div>
+      <div class="layer-sub">Stationnements au sol</div>
     </div>
     <div class="toggle-btn active" id="btn-prk-surface"></div>
   </div>
 
-  <div class="section-label" style="margin-top:16px">Estadísticas</div>
+  <div class="section-label" style="margin-top:16px">Statistiques</div>
   <div class="stat-grid">
     <div class="stat-card">
       <div class="stat-num" id="stat-total">—</div>
-      <div class="stat-lbl">Polígonos totales</div>
+      <div class="stat-lbl">Polygones totaux</div>
     </div>
     <div class="stat-card">
       <div class="stat-num" id="stat-parking">—</div>
-      <div class="stat-lbl">Parking Ramps</div>
+      <div class="stat-lbl">Parkings en ouvrage</div>
     </div>
     <div class="stat-card">
       <div class="stat-num" id="stat-res">—</div>
-      <div class="stat-lbl">Zonas residenciales</div>
+      <div class="stat-lbl">Zones résidentielles</div>
     </div>
     <div class="stat-card">
       <div class="stat-num" id="stat-ind">—</div>
-      <div class="stat-lbl">Industrial</div>
+      <div class="stat-lbl">Industrie</div>
     </div>
   </div>
 
-  <div class="section-label" style="margin-top:16px">Accesos CS2</div>
+  <div class="section-label" style="margin-top:16px">Correspondances CS2</div>
   <div style="font-size:10px; color:rgba(255,255,255,0.35); line-height:1.6;">
-    🟢 Verde oscuro = High Density Res.<br>
-    🟢 Verde medio = Medium Density Res.<br>
-    🟢 Verde claro = Low Density Res.<br>
-    🔵 Azul oscuro = Office High-Rise<br>
-    🔵 Azul claro = Commercial Low Density<br>
-    🟡 Amarillo = Industrial Zone<br>
-    ⚡ Lima neón = Parking Ramp (prioridad)
+    🟢 Vert foncé = résidentiel haute densité<br>
+    🟢 Vert moyen = résidentiel moyenne densité<br>
+    🟢 Vert clair = résidentiel basse densité<br>
+    🔵 Bleu foncé = bureaux / commercial dense<br>
+    🔵 Bleu clair = commercial basse densité<br>
+    🟡 Jaune = industrie<br>
+    ⚡ Vert néon = parking en ouvrage
   </div>
 </div>
 
-<div id="corner-badge">© OpenStreetMap · Datos OSM 2026</div>
+<div id="corner-badge">© OpenStreetMap · Données OSM</div>
 
 <div id="map"></div>
 
@@ -1056,20 +1065,20 @@ const GROUPS = {
 const ACTIVE = Object.fromEntries(Object.keys(GROUPS).map(k => [k, true]));
 
 // ============================================================
-//  CS2 POPUP BUILDER
+//  CONSTRUCTEUR DE POPUPS CS2
 // ============================================================
 const CS2_ZONE_META = {
-  high:       { badge: 'Alta Densidad', color: '#006400', real: 'Bloque Residencial de Gran Altura' },
-  medium:     { badge: 'Media Densidad', color: '#228B22', real: 'Row Housing / Dúplex' },
-  low:        { badge: 'Baja Densidad', color: '#5a9e2f', real: 'Vivienda Unifamiliar' },
-  high_com:   { badge: 'Comercial HD', color: '#1a4bc4', real: 'Torre de Oficinas / Centro Comercial' },
-  low_com:    { badge: 'Comercial LD', color: '#4da6ff', real: 'Tienda de Barrio / Strip Mall' },
-  retail:     { badge: 'Retail/Mixto', color: '#6ab4f7', real: 'Zona Retail / Uso Mixto' },
-  industrial: { badge: 'Industrial', color: '#c8a000', real: 'Zona Industrial / Almacén' },
-  ramp:       { badge: '⚡ Parking Ramp', color: '#39ff14', real: 'Parking Garage Multi-Planta' },
-  surface:    { badge: 'Parking Surface', color: '#b0ff5a', real: 'Estacionamiento a Nivel' },
-  office:     { badge: 'Oficina', color: '#9b59b6', real: 'Edificio de Oficinas / Gobierno' },
-  mixed:      { badge: 'Uso Mixto', color: '#00e5ff', real: 'Comercio + Residencial / Mixed-Use' },
+  high:       { badge: 'Haute densité', color: '#006400', real: 'Grand immeuble résidentiel' },
+  medium:     { badge: 'Moyenne densité', color: '#228B22', real: 'Maisons de ville / petits collectifs' },
+  low:        { badge: 'Basse densité', color: '#5a9e2f', real: 'Habitat individuel ou peu dense' },
+  high_com:   { badge: 'Commercial HD', color: '#1a4bc4', real: 'Bureaux denses / centre commercial' },
+  low_com:    { badge: 'Commercial BD', color: '#4da6ff', real: 'Commerce de proximité' },
+  retail:     { badge: 'Commerce', color: '#6ab4f7', real: 'Zone commerciale / commerce de détail' },
+  industrial: { badge: 'Industrie', color: '#c8a000', real: 'Zone industrielle / entrepôt' },
+  ramp:       { badge: '⚡ Parking en ouvrage', color: '#39ff14', real: 'Parking à étages ou souterrain' },
+  surface:    { badge: 'Parking de surface', color: '#b0ff5a', real: 'Stationnement au sol' },
+  office:     { badge: 'Bureaux', color: '#9b59b6', real: 'Immeuble de bureaux / administration' },
+  mixed:      { badge: 'Usage mixte', color: '#00e5ff', real: 'Commerces + logements' },
 };
 
 function buildPopup(feature) {
@@ -1083,13 +1092,13 @@ function buildPopup(feature) {
     <div class="cs2-popup">
       <span class="popup-zone-badge" style="background:${meta.color};color:#fff;">${meta.badge}</span>
       <div class="popup-name">${feature.name}</div>
-      <div class="popup-real">📍 Realidad: ${meta.real}</div>
+      <div class="popup-real">📍 Réalité : ${meta.real}</div>
       ${tagsHtml ? `<div style="margin:4px 0;">${tagsHtml}</div>` : ''}
       <div class="popup-cs2">
-        <div class="popup-cs2-label">🎮 PINCEL CS2 RECOMENDADO</div>
+        <div class="popup-cs2-label">🎮 PINCEAU CS2 RECOMMANDÉ</div>
         <div class="popup-cs2-brush">${feature.cs2}</div>
       </div>
-      <div class="popup-osm">OSM ID: ${feature.id}</div>
+      <div class="popup-osm">ID OSM : ${feature.id}</div>
     </div>`;
 }
 
