@@ -1,43 +1,79 @@
 (function (App) {
   "use strict";
 
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
   function setText(id, value) {
-    var element = document.getElementById(id);
+    var element = byId(id);
     if (element) {
       element.textContent = value;
     }
   }
 
-  function layerButtonHTML(layerData) {
+  function createElement(tagName, className, text) {
+    var element = document.createElement(tagName);
+    if (className) {
+      element.className = className;
+    }
+    if (text !== undefined) {
+      element.textContent = text;
+    }
+    return element;
+  }
+
+  function createMetricCard(card) {
+    var article = createElement("article", "metric-card");
+    article.append(
+      createElement("div", "metric-value", App.Stats.formatNumber(card.value)),
+      createElement("div", "metric-label", card.label)
+    );
+    return article;
+  }
+
+  function createLayerButton(layerData) {
     var layer = layerData.definition;
-    return '<button type="button" class="layer-toggle" role="listitem" aria-pressed="true" data-layer-key="' +
-      App.SafeHTML.escapeAttribute(layer.key) +
-      '" style="--layer-color:' +
-      App.SafeHTML.escapeAttribute(layer.color) +
-      ';">' +
-      '<span class="layer-swatch" aria-hidden="true"></span>' +
-      '<span class="layer-main">' +
-      '<span class="layer-name">' + App.SafeHTML.escapeHTML(layer.label) + "</span>" +
-      '<span class="layer-description">' + App.SafeHTML.escapeHTML(layer.description) + "</span>" +
-      "</span>" +
-      '<span class="layer-count" aria-label="' + App.SafeHTML.escapeAttribute(layerData.count + " polygones") + '">' +
-      App.Stats.formatNumber(layerData.count) +
-      "</span>" +
-      "</button>";
+    var button = createElement("button", "layer-toggle");
+    var main = createElement("span", "layer-main");
+
+    button.type = "button";
+    button.setAttribute("role", "listitem");
+    button.setAttribute("aria-pressed", "true");
+    button.dataset.layerKey = layer.key;
+    button.style.setProperty("--layer-color", layer.color);
+
+    main.append(
+      createElement("span", "layer-name", layer.label),
+      createElement("span", "layer-description", layer.description)
+    );
+
+    button.append(
+      createElement("span", "layer-swatch"),
+      main,
+      createElement("span", "layer-count", App.Stats.formatNumber(layerData.count))
+    );
+
+    button.querySelector(".layer-swatch").setAttribute("aria-hidden", "true");
+    button.querySelector(".layer-count").setAttribute("aria-label", layerData.count + " polygones");
+    return button;
   }
 
-  function metricCardHTML(card) {
-    return '<article class="metric-card">' +
-      '<div class="metric-value">' + App.Stats.formatNumber(card.value) + "</div>" +
-      '<div class="metric-label">' + App.SafeHTML.escapeHTML(card.label) + "</div>" +
-      "</article>";
+  function createLegendItem(layer) {
+    var item = createElement("div", "legend-item");
+    var swatch = createElement("span", "legend-swatch");
+
+    item.style.setProperty("--layer-color", layer.color);
+    swatch.setAttribute("aria-hidden", "true");
+    item.append(swatch, createElement("span", "", layer.label));
+    return item;
   }
 
-  function legendItemHTML(layer) {
-    return '<div class="legend-item" style="--layer-color:' + App.SafeHTML.escapeAttribute(layer.color) + ';">' +
-      '<span class="legend-swatch" aria-hidden="true"></span>' +
-      '<span>' + App.SafeHTML.escapeHTML(layer.label) + "</span>" +
-      "</div>";
+  function createLayerIndex(dataset) {
+    return dataset.layers.reduce(function (index, layerData) {
+      index[layerData.definition.key] = layerData;
+      return index;
+    }, {});
   }
 
   function updateVisibleCount(dataset) {
@@ -54,134 +90,141 @@
     }
   }
 
+  function renderStatus(context) {
+    var status = byId("dataset-status");
+    var dataset = context.dataset;
+
+    setText("dataset-status", dataset.hasData ? "Données chargées" : "Aucune donnée");
+    setText(
+      "dataset-substatus",
+      dataset.hasData ? App.Stats.formatNumber(dataset.totalRaw) + " polygones détectés" : "Contrat DATA_* absent ou vide"
+    );
+    setText("metrics-context", dataset.hasRenderableData ? "Polygones OSM exploitables" : "Mode attente de données");
+
+    if (status) {
+      status.classList.toggle("is-empty", !dataset.hasData);
+    }
+  }
+
+  function renderMetrics(context) {
+    if (context.metricsGrid) {
+      context.metricsGrid.replaceChildren.apply(
+        context.metricsGrid,
+        context.stats.cards.map(createMetricCard)
+      );
+    }
+  }
+
+  function renderLayers(context) {
+    if (context.layerList) {
+      context.layerList.replaceChildren.apply(
+        context.layerList,
+        context.dataset.layers.map(createLayerButton)
+      );
+    }
+    updateVisibleCount(context.dataset);
+  }
+
+  function renderLegend(context) {
+    if (context.legendList) {
+      context.legendList.replaceChildren.apply(
+        context.legendList,
+        context.dataset.layers.map(function (layerData) {
+          return createLegendItem(layerData.definition);
+        })
+      );
+    }
+  }
+
+  function setLayerActive(context, layerData, active) {
+    layerData.active = active;
+    context.mapController.setLayerVisible(layerData.definition.key, active);
+    updateButtonState(layerData.definition.key, active);
+  }
+
+  function setAllLayers(context, active) {
+    context.dataset.layers.forEach(function (layerData) {
+      layerData.active = active;
+      updateButtonState(layerData.definition.key, active);
+    });
+    context.mapController.setAllVisible(active);
+    updateVisibleCount(context.dataset);
+  }
+
+  function bindLayerControls(context) {
+    if (!context.layerList) {
+      return;
+    }
+    context.layerList.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-layer-key]");
+      var layerData = button ? context.layersByKey[button.dataset.layerKey] : null;
+
+      if (!layerData) {
+        return;
+      }
+
+      setLayerActive(context, layerData, !layerData.active);
+      updateVisibleCount(context.dataset);
+    });
+  }
+
+  function bindToolbar(context) {
+    var showAll = byId("show-all-layers");
+    var hideAll = byId("hide-all-layers");
+    var resetView = byId("reset-view");
+
+    if (showAll) {
+      showAll.addEventListener("click", function () {
+        setAllLayers(context, true);
+      });
+    }
+    if (hideAll) {
+      hideAll.addEventListener("click", function () {
+        setAllLayers(context, false);
+      });
+    }
+    if (resetView) {
+      resetView.addEventListener("click", context.mapController.resetView);
+    }
+  }
+
+  function bindPanelToggle(context) {
+    if (!context.panelToggle) {
+      return;
+    }
+    context.panelToggle.addEventListener("click", function () {
+      var collapsed = document.body.classList.toggle("panel-collapsed");
+      context.panelToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      context.mapController.invalidateSize();
+    });
+  }
+
+  function render(context) {
+    renderStatus(context);
+    renderMetrics(context);
+    renderLayers(context);
+    renderLegend(context);
+    bindLayerControls(context);
+    bindToolbar(context);
+    bindPanelToggle(context);
+  }
+
   function create(options) {
-    var dataset = options.dataset;
-    var stats = options.stats;
-    var mapController = options.mapController;
-    var layerList = document.getElementById("layer-controls");
-    var metricsGrid = document.getElementById("metrics-grid");
-    var legendList = document.getElementById("legend-list");
-    var panelToggle = document.getElementById("panel-toggle");
-
-    function renderStatus() {
-      var status = document.getElementById("dataset-status");
-      if (dataset.hasData) {
-        setText("dataset-status", "Données chargées");
-        setText("dataset-substatus", App.Stats.formatNumber(dataset.totalRaw) + " polygones détectés");
-        if (status) {
-          status.classList.remove("is-empty");
-        }
-      } else {
-        setText("dataset-status", "Aucune donnée");
-        setText("dataset-substatus", "Contrat DATA_* absent ou vide");
-        if (status) {
-          status.classList.add("is-empty");
-        }
-      }
-      setText("metrics-context", dataset.hasRenderableData ? "Polygones OSM exploitables" : "Mode attente de données");
-    }
-
-    function renderMetrics() {
-      if (metricsGrid) {
-        metricsGrid.innerHTML = stats.cards.map(metricCardHTML).join("");
-      }
-    }
-
-    function renderLayers() {
-      if (layerList) {
-        layerList.innerHTML = dataset.layers.map(layerButtonHTML).join("");
-      }
-      updateVisibleCount(dataset);
-    }
-
-    function renderLegend() {
-      if (legendList) {
-        legendList.innerHTML = dataset.layers.map(function (layerData) {
-          return legendItemHTML(layerData.definition);
-        }).join("");
-      }
-    }
-
-    function bindLayerControls() {
-      if (!layerList) {
-        return;
-      }
-      layerList.addEventListener("click", function (event) {
-        var button = event.target.closest("[data-layer-key]");
-        if (!button) {
-          return;
-        }
-        var key = button.getAttribute("data-layer-key");
-        var layerData = dataset.layers.find(function (entry) {
-          return entry.definition.key === key;
-        });
-        if (!layerData) {
-          return;
-        }
-        layerData.active = !layerData.active;
-        mapController.setLayerVisible(key, layerData.active);
-        updateButtonState(key, layerData.active);
-        updateVisibleCount(dataset);
-      });
-    }
-
-    function bindToolbar() {
-      var showAll = document.getElementById("show-all-layers");
-      var hideAll = document.getElementById("hide-all-layers");
-      var resetView = document.getElementById("reset-view");
-
-      if (showAll) {
-        showAll.addEventListener("click", function () {
-          dataset.layers.forEach(function (layerData) {
-            layerData.active = true;
-            updateButtonState(layerData.definition.key, true);
-          });
-          mapController.setAllVisible(true);
-          updateVisibleCount(dataset);
-        });
-      }
-
-      if (hideAll) {
-        hideAll.addEventListener("click", function () {
-          dataset.layers.forEach(function (layerData) {
-            layerData.active = false;
-            updateButtonState(layerData.definition.key, false);
-          });
-          mapController.setAllVisible(false);
-          updateVisibleCount(dataset);
-        });
-      }
-
-      if (resetView) {
-        resetView.addEventListener("click", function () {
-          mapController.resetView();
-        });
-      }
-    }
-
-    function bindPanelToggle() {
-      if (!panelToggle) {
-        return;
-      }
-      panelToggle.addEventListener("click", function () {
-        var collapsed = document.body.classList.toggle("panel-collapsed");
-        panelToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        mapController.invalidateSize();
-      });
-    }
-
-    function render() {
-      renderStatus();
-      renderMetrics();
-      renderLayers();
-      renderLegend();
-      bindLayerControls();
-      bindToolbar();
-      bindPanelToggle();
-    }
+    var context = {
+      dataset: options.dataset,
+      stats: options.stats,
+      mapController: options.mapController,
+      layersByKey: createLayerIndex(options.dataset),
+      layerList: byId("layer-controls"),
+      metricsGrid: byId("metrics-grid"),
+      legendList: byId("legend-list"),
+      panelToggle: byId("panel-toggle")
+    };
 
     return {
-      render: render
+      render: function () {
+        render(context);
+      }
     };
   }
 

@@ -1,25 +1,37 @@
 (function (App) {
   "use strict";
 
-  function readGlobalArray(globalName) {
-    switch (globalName) {
-      case "DATA_RESIDENTIAL":
-        return typeof DATA_RESIDENTIAL !== "undefined" && Array.isArray(DATA_RESIDENTIAL) ? DATA_RESIDENTIAL : [];
-      case "DATA_COMMERCIAL":
-        return typeof DATA_COMMERCIAL !== "undefined" && Array.isArray(DATA_COMMERCIAL) ? DATA_COMMERCIAL : [];
-      case "DATA_RETAIL":
-        return typeof DATA_RETAIL !== "undefined" && Array.isArray(DATA_RETAIL) ? DATA_RETAIL : [];
-      case "DATA_INDUSTRIAL":
-        return typeof DATA_INDUSTRIAL !== "undefined" && Array.isArray(DATA_INDUSTRIAL) ? DATA_INDUSTRIAL : [];
-      case "DATA_PARKING":
-        return typeof DATA_PARKING !== "undefined" && Array.isArray(DATA_PARKING) ? DATA_PARKING : [];
-      case "DATA_OFFICE":
-        return typeof DATA_OFFICE !== "undefined" && Array.isArray(DATA_OFFICE) ? DATA_OFFICE : [];
-      case "DATA_MIXED":
-        return typeof DATA_MIXED !== "undefined" && Array.isArray(DATA_MIXED) ? DATA_MIXED : [];
-      default:
-        return [];
+  var SOURCE_READERS = {
+    DATA_RESIDENTIAL: function () {
+      return typeof DATA_RESIDENTIAL === "undefined" ? [] : DATA_RESIDENTIAL;
+    },
+    DATA_COMMERCIAL: function () {
+      return typeof DATA_COMMERCIAL === "undefined" ? [] : DATA_COMMERCIAL;
+    },
+    DATA_RETAIL: function () {
+      return typeof DATA_RETAIL === "undefined" ? [] : DATA_RETAIL;
+    },
+    DATA_INDUSTRIAL: function () {
+      return typeof DATA_INDUSTRIAL === "undefined" ? [] : DATA_INDUSTRIAL;
+    },
+    DATA_PARKING: function () {
+      return typeof DATA_PARKING === "undefined" ? [] : DATA_PARKING;
+    },
+    DATA_OFFICE: function () {
+      return typeof DATA_OFFICE === "undefined" ? [] : DATA_OFFICE;
+    },
+    DATA_MIXED: function () {
+      return typeof DATA_MIXED === "undefined" ? [] : DATA_MIXED;
     }
+  };
+
+  function toArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function readGlobalArray(globalName) {
+    var reader = SOURCE_READERS[globalName];
+    return reader ? toArray(reader()) : [];
   }
 
   function normalizeCoord(coord) {
@@ -27,14 +39,14 @@
       return null;
     }
     var lat = Number(coord[0]);
-    var lon = Number(coord[1]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    var longitude = Number(coord[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(longitude)) {
       return null;
     }
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    if (lat < -90 || lat > 90 || longitude < -180 || longitude > 180) {
       return null;
     }
-    return [lat, lon];
+    return [lat, longitude];
   }
 
   function normalizeCoords(coords) {
@@ -47,11 +59,11 @@
   function extendBounds(bounds, coords) {
     coords.forEach(function (coord) {
       var lat = coord[0];
-      var lon = coord[1];
+      var longitude = coord[1];
       bounds.south = Math.min(bounds.south, lat);
-      bounds.west = Math.min(bounds.west, lon);
+      bounds.west = Math.min(bounds.west, longitude);
       bounds.north = Math.max(bounds.north, lat);
-      bounds.east = Math.max(bounds.east, lon);
+      bounds.east = Math.max(bounds.east, longitude);
       bounds.valid = true;
     });
   }
