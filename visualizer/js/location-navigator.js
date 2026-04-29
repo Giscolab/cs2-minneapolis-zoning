@@ -86,6 +86,14 @@
     );
   }
 
+  function notifyLocationSelected(context) {
+    window.dispatchEvent(new CustomEvent("cs2zoning:location-selected", {
+      detail: {
+        center: context.map.getCenter()
+      }
+    }));
+  }
+
   function replaceOptions(select, placeholder, options) {
     var nodes = [createOption("", placeholder, true)];
     options.forEach(function (option) {
@@ -164,6 +172,7 @@
 
     fillCountries(context, continent);
     fitLocation(context, continent, 3);
+    notifyLocationSelected(context);
     setStatus(context, continent.name);
   }
 
@@ -178,6 +187,7 @@
 
     fillCapital(context, country);
     fitLocation(context, country, 7);
+    notifyLocationSelected(context);
     setStatus(context, country.name);
   }
 
@@ -186,6 +196,7 @@
     context.goButton.disabled = !capital;
     if (capital) {
       focusCapital(context, capital);
+      notifyLocationSelected(context);
       setStatus(context, capital.name);
     }
   }
@@ -194,6 +205,7 @@
     var capital = getSelectedCapital(context);
     if (capital) {
       focusCapital(context, capital);
+      notifyLocationSelected(context);
       setStatus(context, capital.name);
     }
   }

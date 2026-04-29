@@ -62,7 +62,7 @@
       <section class="cs2-helper-section" aria-labelledby="cs2-helper-title">
         <div class="section-heading">
           <h2 id="cs2-helper-title">Aide CS2</h2>
-          <span id="cs2-helper-status" class="section-meta">Centre carte</span>
+          <span id="cs2-helper-status" class="section-meta">Overlay CS2</span>
         </div>
         <div class="cs2-helper-inputs">
           <label class="cs2-helper-field" for="cs2-helper-city">
@@ -70,17 +70,30 @@
             <input id="cs2-helper-city" type="text" value="Zone CS2" autocomplete="off">
           </label>
           <label class="cs2-helper-field" for="cs2-helper-size">
-            <span>Taille CS2 (km)</span>
+            <span>World map (km)</span>
             <input id="cs2-helper-size" type="number" min="0.1" max="500" step="0.001" value="57.344">
+          </label>
+          <label class="cs2-helper-field" for="cs2-helper-heightmap-size">
+            <span>Heightmap (km)</span>
+            <input id="cs2-helper-heightmap-size" type="number" min="0.1" max="500" step="0.001" value="19.115">
+          </label>
+          <label class="cs2-helper-field" for="cs2-helper-step">
+            <span>Pas</span>
+            <select id="cs2-helper-step">
+              <option value="1">1 m</option>
+              <option value="10" selected>10 m</option>
+              <option value="100">100 m</option>
+              <option value="1000">1 km</option>
+            </select>
           </label>
         </div>
         <dl class="cs2-helper-readouts">
           <div>
-            <dt>Latitude</dt>
+            <dt>Latitude centre</dt>
             <dd id="cs2-helper-lat">-</dd>
           </div>
           <div>
-            <dt>Longitude</dt>
+            <dt>Longitude centre</dt>
             <dd id="cs2-helper-lon">-</dd>
           </div>
           <div>
@@ -88,12 +101,29 @@
             <dd id="cs2-helper-zoom">-</dd>
           </div>
         </dl>
+        <div class="cs2-helper-nudge" aria-label="Déplacement précis de l'overlay CS2">
+          <button id="cs2-move-north" type="button" class="nudge-button nudge-north">Nord</button>
+          <button id="cs2-move-west" type="button" class="nudge-button nudge-west">Ouest</button>
+          <button id="cs2-move-east" type="button" class="nudge-button nudge-east">Est</button>
+          <button id="cs2-move-south" type="button" class="nudge-button nudge-south">Sud</button>
+        </div>
+        <div class="cs2-helper-actions">
+          <button id="sync-cs2-overlay" type="button" class="control-button">Synchroniser centre carte</button>
+          <button id="fit-cs2-overlay" type="button" class="control-button control-button-primary">Centrer sur overlay</button>
+        </div>
         <div class="cs2-helper-output">
           <div class="cs2-helper-output-heading">
-            <span>BBOX Overpass</span>
+            <span>BBOX world map</span>
             <button id="copy-cs2-bbox" type="button" class="copy-button">Copier</button>
           </div>
           <output id="cs2-helper-bbox">-</output>
+        </div>
+        <div class="cs2-helper-output">
+          <div class="cs2-helper-output-heading">
+            <span>BBOX heightmap</span>
+            <button id="copy-cs2-heightmap-bbox" type="button" class="copy-button">Copier</button>
+          </div>
+          <output id="cs2-helper-heightmap-bbox">-</output>
         </div>
         <div class="cs2-helper-output">
           <div class="cs2-helper-output-heading">
@@ -159,6 +189,7 @@
   <script src="./js/map-controller.js"></script>
   <script src="./js/panel-controller.js"></script>
   <script src="./js/location-navigator.js"></script>
+  <script src="./js/cs2-overlay-controller.js"></script>
   <script src="./js/cs2-map-helper.js"></script>
   <script src="./js/app.js"></script>
 </body>

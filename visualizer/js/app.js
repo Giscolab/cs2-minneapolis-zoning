@@ -35,13 +35,17 @@
         config: App.Config,
         dataset: dataset
       });
+      var overlayController = App.CS2OverlayController ? App.CS2OverlayController.create({
+        map: mapController.map
+      }) : null;
       var panel = App.PanelController.create({
         dataset: dataset,
         stats: stats,
         mapController: mapController
       });
       var cs2MapHelper = App.CS2MapHelper ? App.CS2MapHelper.create({
-        mapController: mapController
+        mapController: mapController,
+        overlayController: overlayController
       }) : null;
 
       panel.render();
@@ -52,6 +56,7 @@
         dataset: dataset,
         stats: stats,
         mapController: mapController,
+        overlayController: overlayController,
         cs2MapHelper: cs2MapHelper
       };
     } catch (error) {

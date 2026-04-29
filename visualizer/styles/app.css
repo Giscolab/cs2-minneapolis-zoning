@@ -466,7 +466,8 @@ h2 {
   font-size: var(--text-xs);
 }
 
-.cs2-helper-field input {
+.cs2-helper-field input,
+.cs2-helper-field select {
   width: 100%;
   min-width: 0;
   min-height: 34px;
@@ -481,9 +482,15 @@ h2 {
   transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
 }
 
-.cs2-helper-field input:focus-visible {
+.cs2-helper-field input:focus-visible,
+.cs2-helper-field select:focus-visible {
   border-color: rgba(88, 216, 255, 0.58);
   background: rgba(88, 216, 255, 0.1);
+}
+
+.cs2-helper-field select option {
+  background: var(--color-surface-solid);
+  color: var(--color-text);
 }
 
 .cs2-helper-readouts {
@@ -514,6 +521,64 @@ h2 {
   font-size: var(--text-xs);
   font-weight: 800;
   line-height: 1.35;
+}
+
+.cs2-helper-nudge {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    ". north ."
+    "west . east"
+    ". south .";
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.nudge-button {
+  min-height: 32px;
+  border: 1px solid rgba(88, 216, 255, 0.28);
+  border-radius: var(--radius-md);
+  background: rgba(88, 216, 255, 0.08);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  transition: border-color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
+}
+
+.nudge-button:hover,
+.nudge-button:focus-visible {
+  border-color: rgba(88, 216, 255, 0.66);
+  background: rgba(88, 216, 255, 0.14);
+  outline: none;
+}
+
+.nudge-button:active {
+  transform: translateY(1px);
+}
+
+.nudge-north {
+  grid-area: north;
+}
+
+.nudge-south {
+  grid-area: south;
+}
+
+.nudge-east {
+  grid-area: east;
+}
+
+.nudge-west {
+  grid-area: west;
+}
+
+.cs2-helper-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .cs2-helper-output {
@@ -697,6 +762,14 @@ body.panel-collapsed .dashboard-panel {
   margin: 0;
 }
 
+.cs2-world-map-rectangle {
+  filter: drop-shadow(0 0 14px rgba(86, 214, 138, 0.24));
+}
+
+.cs2-heightmap-rectangle {
+  filter: drop-shadow(0 0 14px rgba(88, 216, 255, 0.28));
+}
+
 .cs2-popup {
   min-width: 248px;
   max-width: 320px;
@@ -802,7 +875,8 @@ body.panel-collapsed .dashboard-panel {
   }
 
   .cs2-helper-inputs,
-  .cs2-helper-readouts {
+  .cs2-helper-readouts,
+  .cs2-helper-actions {
     grid-template-columns: 1fr;
   }
 }

@@ -1,9 +1,6 @@
 (function (App) {
   "use strict";
 
-  var DEFAULT_SIZE_KM = 57.344;
-  var EARTH_KM_PER_DEGREE = 111.32;
-
   function byId(id) {
     return document.getElementById(id);
   }
@@ -14,25 +11,8 @@
     }
   }
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
-  function round(value, digits) {
-    var factor = Math.pow(10, digits);
-    return Math.round(value * factor) / factor;
-  }
-
   function formatNumber(value, digits) {
-    return round(value, digits).toFixed(digits);
-  }
-
-  function readMapSize(input) {
-    var value = Number(input && input.value);
-    if (!Number.isFinite(value) || value <= 0) {
-      return DEFAULT_SIZE_KM;
-    }
-    return clamp(value, 0.1, 500);
+    return Number(value).toFixed(digits);
   }
 
   function getCityName(input) {
@@ -42,32 +22,6 @@
 
   function quoteArg(value) {
     return '"' + String(value).replace(/"/g, "'") + '"';
-  }
-
-  function buildBBox(center, mapSizeKm) {
-    var lat = Number(center.lat);
-    var lon = Number(center.lng);
-    var halfKm = mapSizeKm / 2;
-    var latRadians = lat * Math.PI / 180;
-    var cosLat = Math.max(0.01, Math.abs(Math.cos(latRadians)));
-    var deltaLat = halfKm / EARTH_KM_PER_DEGREE;
-    var deltaLon = halfKm / (EARTH_KM_PER_DEGREE * cosLat);
-
-    return {
-      south: clamp(lat - deltaLat, -85, 85),
-      west: clamp(lon - deltaLon, -180, 180),
-      north: clamp(lat + deltaLat, -85, 85),
-      east: clamp(lon + deltaLon, -180, 180)
-    };
-  }
-
-  function formatBBox(bbox) {
-    return [
-      formatNumber(bbox.south, 4),
-      formatNumber(bbox.west, 4),
-      formatNumber(bbox.north, 4),
-      formatNumber(bbox.east, 4)
-    ].join(",");
   }
 
   function buildCommand(cityName, bboxText) {
@@ -110,41 +64,81 @@
     }, 1100);
   }
 
-  function update(context) {
-    var center = context.map.getCenter();
-    var zoom = context.map.getZoom();
-    var mapSize = readMapSize(context.sizeInput);
-    var bbox = buildBBox(center, mapSize);
-    var bboxText = formatBBox(bbox);
-    var command = buildCommand(getCityName(context.cityInput), bboxText);
-
-    context.currentBBox = bboxText;
-    context.currentCommand = command;
-
-    setText(context.latOutput, formatNumber(center.lat, 5));
-    setText(context.lonOutput, formatNumber(center.lng, 5));
-    setText(context.zoomOutput, formatNumber(zoom, 2));
-    setText(context.bboxOutput, bboxText);
-    setText(context.commandOutput, command);
-    setText(context.status, formatNumber(mapSize, 3) + " km");
+  function syncInputs(context, state) {
+    if (document.activeElement !== context.worldSizeInput) {
+      context.worldSizeInput.value = formatNumber(state.worldMapSizeKm, 3);
+    }
+    if (document.activeElement !== context.heightmapSizeInput) {
+      context.heightmapSizeInput.value = formatNumber(state.heightmapSizeKm, 3);
+    }
+    if (document.activeElement !== context.stepSelect) {
+      context.stepSelect.value = String(state.stepMeters);
+    }
   }
 
-  function bind(context) {
-    context.map.on("moveend zoomend", function () {
-      update(context);
+  function update(context, state) {
+    var zoom = context.map.getZoom();
+    var command = buildCommand(getCityName(context.cityInput), state.worldMapBBoxText);
+
+    context.currentWorldBBox = state.worldMapBBoxText;
+    context.currentHeightmapBBox = state.heightmapBBoxText;
+    context.currentCommand = command;
+
+    syncInputs(context, state);
+    setText(context.latOutput, formatNumber(state.center.lat, 6));
+    setText(context.lonOutput, formatNumber(state.center.lng, 6));
+    setText(context.zoomOutput, formatNumber(zoom, 2));
+    setText(context.worldBBoxOutput, state.worldMapBBoxText);
+    setText(context.heightmapBBoxOutput, state.heightmapBBoxText);
+    setText(context.commandOutput, command);
+    setText(context.status, "Pas " + formatStep(state.stepMeters));
+  }
+
+  function formatStep(stepMeters) {
+    return stepMeters >= 1000 ? "1 km" : stepMeters + " m";
+  }
+
+  function updateFromController(context) {
+    update(context, context.overlayController.getState());
+  }
+
+  function bindSizeInputs(context) {
+    context.worldSizeInput.addEventListener("input", function () {
+      context.overlayController.setWorldMapSizeKm(context.worldSizeInput.value);
     });
 
-    context.sizeInput.addEventListener("input", function () {
-      update(context);
+    context.heightmapSizeInput.addEventListener("input", function () {
+      context.overlayController.setHeightmapSizeKm(context.heightmapSizeInput.value);
+    });
+
+    context.stepSelect.addEventListener("change", function () {
+      context.overlayController.setStepMeters(context.stepSelect.value);
     });
 
     context.cityInput.addEventListener("input", function () {
-      update(context);
+      updateFromController(context);
+    });
+  }
+
+  function bindMoveButtons(context) {
+    context.moveNorth.addEventListener("click", context.overlayController.moveNorth);
+    context.moveSouth.addEventListener("click", context.overlayController.moveSouth);
+    context.moveEast.addEventListener("click", context.overlayController.moveEast);
+    context.moveWest.addEventListener("click", context.overlayController.moveWest);
+    context.syncCenter.addEventListener("click", context.overlayController.syncWithMapCenter);
+    context.fitOverlay.addEventListener("click", context.overlayController.centerViewOnOverlay);
+  }
+
+  function bindCopyButtons(context) {
+    context.copyWorldBBox.addEventListener("click", function () {
+      copyText(context.currentWorldBBox, function () {
+        flashButton(context.copyWorldBBox, "Copié");
+      });
     });
 
-    context.copyBBox.addEventListener("click", function () {
-      copyText(context.currentBBox, function () {
-        flashButton(context.copyBBox, "Copié");
+    context.copyHeightmapBBox.addEventListener("click", function () {
+      copyText(context.currentHeightmapBBox, function () {
+        flashButton(context.copyHeightmapBBox, "Copié");
       });
     });
 
@@ -155,40 +149,78 @@
     });
   }
 
+  function bind(context) {
+    context.overlayController.onChange(function (state) {
+      update(context, state);
+    });
+
+    context.map.on("zoomend", function () {
+      updateFromController(context);
+    });
+
+    bindSizeInputs(context);
+    bindMoveButtons(context);
+    bindCopyButtons(context);
+  }
+
   function create(options) {
     var mapController = options && options.mapController;
+    var overlayController = options && options.overlayController;
     var context = {
       map: mapController && mapController.map,
+      overlayController: overlayController,
       status: byId("cs2-helper-status"),
       cityInput: byId("cs2-helper-city"),
-      sizeInput: byId("cs2-helper-size"),
+      worldSizeInput: byId("cs2-helper-size"),
+      heightmapSizeInput: byId("cs2-helper-heightmap-size"),
+      stepSelect: byId("cs2-helper-step"),
       latOutput: byId("cs2-helper-lat"),
       lonOutput: byId("cs2-helper-lon"),
       zoomOutput: byId("cs2-helper-zoom"),
-      bboxOutput: byId("cs2-helper-bbox"),
+      worldBBoxOutput: byId("cs2-helper-bbox"),
+      heightmapBBoxOutput: byId("cs2-helper-heightmap-bbox"),
       commandOutput: byId("cs2-helper-command"),
-      copyBBox: byId("copy-cs2-bbox"),
+      moveNorth: byId("cs2-move-north"),
+      moveSouth: byId("cs2-move-south"),
+      moveEast: byId("cs2-move-east"),
+      moveWest: byId("cs2-move-west"),
+      syncCenter: byId("sync-cs2-overlay"),
+      fitOverlay: byId("fit-cs2-overlay"),
+      copyWorldBBox: byId("copy-cs2-bbox"),
+      copyHeightmapBBox: byId("copy-cs2-heightmap-bbox"),
       copyCommand: byId("copy-cs2-command"),
-      currentBBox: "",
+      currentWorldBBox: "",
+      currentHeightmapBBox: "",
       currentCommand: ""
     };
 
     if (!context.map ||
+      !context.overlayController ||
       !context.cityInput ||
-      !context.sizeInput ||
-      !context.bboxOutput ||
+      !context.worldSizeInput ||
+      !context.heightmapSizeInput ||
+      !context.stepSelect ||
+      !context.worldBBoxOutput ||
+      !context.heightmapBBoxOutput ||
       !context.commandOutput ||
-      !context.copyBBox ||
+      !context.moveNorth ||
+      !context.moveSouth ||
+      !context.moveEast ||
+      !context.moveWest ||
+      !context.syncCenter ||
+      !context.fitOverlay ||
+      !context.copyWorldBBox ||
+      !context.copyHeightmapBBox ||
       !context.copyCommand) {
       return null;
     }
 
     bind(context);
-    update(context);
+    updateFromController(context);
 
     return {
       update: function () {
-        update(context);
+        updateFromController(context);
       }
     };
   }
