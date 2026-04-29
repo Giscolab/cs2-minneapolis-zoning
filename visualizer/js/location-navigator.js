@@ -53,16 +53,21 @@
       return;
     }
 
+    if (context.map.stop) {
+      context.map.stop();
+    }
+
     if (isValidBounds(location.bbox)) {
       context.map.fitBounds(location.bbox, {
         padding: [28, 28],
-        maxZoom: Number(location.zoom) || fallbackZoom
+        maxZoom: Number(location.zoom) || fallbackZoom,
+        animate: false
       });
       return;
     }
 
     if (isValidPoint(location.center)) {
-      context.map.setView(location.center, Number(location.zoom) || fallbackZoom);
+      context.map.setView(location.center, Number(location.zoom) || fallbackZoom, { animate: false });
     }
   }
 
@@ -71,9 +76,13 @@
       return;
     }
 
+    if (context.map.stop) {
+      context.map.stop();
+    }
     context.map.setView(
       [Number(capital.lat), Number(capital.lon)],
-      Number(capital.zoom) || 11
+      Number(capital.zoom) || 11,
+      { animate: false }
     );
   }
 

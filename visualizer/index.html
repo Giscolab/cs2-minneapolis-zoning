@@ -59,6 +59,51 @@
         <div id="metrics-grid" class="metrics-grid" aria-live="polite"></div>
       </section>
 
+      <section class="cs2-helper-section" aria-labelledby="cs2-helper-title">
+        <div class="section-heading">
+          <h2 id="cs2-helper-title">Aide CS2</h2>
+          <span id="cs2-helper-status" class="section-meta">Centre carte</span>
+        </div>
+        <div class="cs2-helper-inputs">
+          <label class="cs2-helper-field" for="cs2-helper-city">
+            <span>Nom</span>
+            <input id="cs2-helper-city" type="text" value="Zone CS2" autocomplete="off">
+          </label>
+          <label class="cs2-helper-field" for="cs2-helper-size">
+            <span>Taille CS2 (km)</span>
+            <input id="cs2-helper-size" type="number" min="0.1" max="500" step="0.001" value="57.344">
+          </label>
+        </div>
+        <dl class="cs2-helper-readouts">
+          <div>
+            <dt>Latitude</dt>
+            <dd id="cs2-helper-lat">-</dd>
+          </div>
+          <div>
+            <dt>Longitude</dt>
+            <dd id="cs2-helper-lon">-</dd>
+          </div>
+          <div>
+            <dt>Zoom Leaflet</dt>
+            <dd id="cs2-helper-zoom">-</dd>
+          </div>
+        </dl>
+        <div class="cs2-helper-output">
+          <div class="cs2-helper-output-heading">
+            <span>BBOX Overpass</span>
+            <button id="copy-cs2-bbox" type="button" class="copy-button">Copier</button>
+          </div>
+          <output id="cs2-helper-bbox">-</output>
+        </div>
+        <div class="cs2-helper-output">
+          <div class="cs2-helper-output-heading">
+            <span>Commande Python</span>
+            <button id="copy-cs2-command" type="button" class="copy-button">Copier</button>
+          </div>
+          <output id="cs2-helper-command">-</output>
+        </div>
+      </section>
+
       <section class="controls-section" aria-labelledby="layers-title">
         <div class="section-heading">
           <h2 id="layers-title">Couches</h2>
@@ -114,6 +159,7 @@
   <script src="./js/map-controller.js"></script>
   <script src="./js/panel-controller.js"></script>
   <script src="./js/location-navigator.js"></script>
+  <script src="./js/cs2-map-helper.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>

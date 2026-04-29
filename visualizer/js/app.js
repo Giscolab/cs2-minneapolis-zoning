@@ -40,6 +40,9 @@
         stats: stats,
         mapController: mapController
       });
+      var cs2MapHelper = App.CS2MapHelper ? App.CS2MapHelper.create({
+        mapController: mapController
+      }) : null;
 
       panel.render();
       showEmptyState(dataset);
@@ -48,7 +51,8 @@
       App.state = {
         dataset: dataset,
         stats: stats,
-        mapController: mapController
+        mapController: mapController,
+        cs2MapHelper: cs2MapHelper
       };
     } catch (error) {
       console.error(error);
