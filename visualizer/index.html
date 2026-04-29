@@ -14,6 +14,27 @@
   <main class="app-shell" aria-label="Visualiseur de zonage réel pour Cities: Skylines 2">
     <div id="map" class="map-canvas" aria-label="Carte interactive des zones extraites d'OpenStreetMap"></div>
 
+    <nav id="location-navigator" class="location-navigator" aria-label="Navigateur mondial">
+      <div class="location-heading">
+        <span class="location-kicker">Monde</span>
+        <strong>Navigation rapide</strong>
+      </div>
+      <label class="location-field" for="location-continent">
+        <span>Continent</span>
+        <select id="location-continent" autocomplete="off"></select>
+      </label>
+      <label class="location-field" for="location-country">
+        <span>Pays</span>
+        <select id="location-country" autocomplete="off" disabled></select>
+      </label>
+      <label class="location-field" for="location-capital">
+        <span>Capitale</span>
+        <select id="location-capital" autocomplete="off" disabled></select>
+      </label>
+      <button id="location-go" type="button" class="location-go" disabled>Aller</button>
+      <span id="location-status" class="location-status" aria-live="polite">Sélectionnez une zone</span>
+    </nav>
+
     <aside id="dashboard" class="dashboard-panel" aria-label="Tableau de bord de zonage">
       <header class="app-header">
         <div class="brand-block">
@@ -85,12 +106,14 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="./zoning_data.js"></script>
+  <script src="./data/world_capitals.js"></script>
   <script src="./js/config.js"></script>
   <script src="./js/safe-html.js"></script>
   <script src="./js/data-adapter.js"></script>
   <script src="./js/stats.js"></script>
   <script src="./js/map-controller.js"></script>
   <script src="./js/panel-controller.js"></script>
+  <script src="./js/location-navigator.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>
