@@ -46,7 +46,7 @@ Voir [bbox-mcp-server.md](bbox-mcp-server.md) pour le contexte d'utilisation.
 
 ### Option C — Outil cartographique manuel
 
-Vous pouvez aussi dessiner une zone sur un outil comme [bboxfinder.com](http://bboxfinder.com/).
+Vous pouvez aussi dessiner une zone sur un outil comme [bboxfinder.com](https://bboxfinder.com/).
 
 Vérifiez toujours l'ordre des coordonnées avant l'extraction : beaucoup d'outils SIG affichent `ouest,sud,est,nord`, alors que ce projet attend `sud,ouest,nord,est`.
 
@@ -87,7 +87,7 @@ Le script :
 1. télécharge les bâtiments avec `building:levels` pour construire un index de densité ;
 2. télécharge les catégories de zonage OSM une par une ;
 3. classe les polygones vers les catégories CS2 ;
-4. écrit `../visualizer/datos_zonificacion.js`.
+4. écrit `../visualizer/zoning_data.js`.
 
 La taille du fichier de sortie dépend de l'emprise choisie et de la densité des données OSM.
 
@@ -99,7 +99,7 @@ Ouvrez `visualizer/index.html` dans un navigateur moderne.
 
 Si la carte est vide :
 
-- vérifiez que `visualizer/datos_zonificacion.js` existe ;
+- vérifiez que `visualizer/zoning_data.js` existe ;
 - ouvrez la console du navigateur ;
 - vérifiez que le chemin du fichier généré correspond bien au fichier chargé par `index.html` ;
 - assurez-vous que la bbox n'est pas inversée.

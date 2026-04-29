@@ -2,12 +2,12 @@
 # SORTIES DE ZONAGE GENEREES
 # =========================
 
-visualizer/datos_zonificacion.js
-src/datos_zonificacion.js
+visualizer/zoning_data.js
+src/zoning_data.js
 *.log
 
 # Conserver seulement l'echantillon leger.
-!data/sample_output.js
+!data/sample_zoning_output.js
 
 
 # =========================

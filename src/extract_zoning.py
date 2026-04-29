@@ -74,7 +74,7 @@ def main():
     )
     parser.add_argument(
         "--out",
-        default="../visualizer/datos_zonificacion.js",
+        default="../visualizer/zoning_data.js",
         help="Chemin du fichier JavaScript généré.",
     )
 

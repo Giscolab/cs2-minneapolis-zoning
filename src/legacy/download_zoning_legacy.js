@@ -1,7 +1,7 @@
 /**
- * descargar_zonificacion.js — v2
+ * download_zoning_legacy.js — v2
  * Zonage historique Minneapolis · bbox élargie · bureaux · usage mixte
- * Exécution : node descargar_zonificacion.js
+ * Exécution : node download_zoning_legacy.js
  *
  * Fichier historique conservé pour référence ; le pipeline maintenu est le script Python dans src/.
  */
@@ -10,7 +10,7 @@ const http  = require('http');
 const fs    = require('fs');
 const path  = require('path');
 
-const OUT_FILE = path.join(__dirname, 'datos_zonificacion.js');
+const OUT_FILE = path.join(__dirname, 'zoning_data_legacy.js');
 const BBOX     = '44.86,-93.38,45.05,-93.17';
 
 const ENDPOINTS = [
@@ -255,7 +255,7 @@ async function main() {
   console.log(`  Sans géométrie (ignorés)    : ${skipped}`);
   console.log(`  TOTAL                       : ${total}`);
 
-  console.log('\n[5/5] Écriture de datos_zonificacion.js...');
+  console.log('\n[5/5] Écriture de zoning_data_legacy.js...');
   const js = [
     '// Généré automatiquement -- ' + new Date().toISOString(),
     '// Zonage historique Minneapolis v2 -- bbox : ' + BBOX,

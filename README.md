@@ -46,7 +46,7 @@ Cet outil extrait des polygones réels depuis OpenStreetMap via l'API Overpass, 
                │
                ▼
 ┌─────────────────────────────┐
-│  datos_zonificacion.js      │
+│  zoning_data.js             │
 │  ← polygones classés        │
 │    au format JavaScript     │
 └──────────────┬──────────────┘
@@ -89,8 +89,8 @@ Cet outil extrait des polygones réels depuis OpenStreetMap via l'API Overpass, 
 ### 1️⃣ Cloner le dépôt
 
 ```powershell
-git clone https://github.com/Osyanne/cs2-minneapolis-zoning
-cd cs2-minneapolis-zoning\src
+git clone https://github.com/<owner>/cs2-real-zoning-extractor
+cd cs2-real-zoning-extractor\src
 ```
 
 ### 2️⃣ Installer les dépendances
@@ -108,7 +108,7 @@ C:\Python314\python.exe .\extract_zoning.py --bbox "48.766147,2.161560,48.945053
 ### 4️⃣ Visualiser la carte
 
 ```powershell
-cd ..isualizer
+cd ..\visualizer
 start index.html
 ```
 
@@ -137,7 +137,7 @@ latitude_min,longitude_min,latitude_max,longitude_max
 
 Ce fork vise à rendre l'outil plus générique :
 
-- [x] Ne plus dépendre de Minneapolis par défaut
+- [x] Ne plus dépendre d'une ville unique par défaut
 - [x] Permettre l'extraction de n'importe quelle ville
 - [ ] Améliorer la classification pour les villes européennes *(en cours)*
 - [ ] Préparer une interface multilingue *(en cours)*

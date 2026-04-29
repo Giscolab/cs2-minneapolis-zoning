@@ -33,8 +33,8 @@ Avant de publier, vérifiez en particulier :
 - les environnements locaux (`.venv/`) ne sont pas ajoutés ;
 - les caches Python (`__pycache__/`) ne sont pas ajoutés ;
 - les fichiers générés lourds ne sont pas ajoutés par accident ;
-- `visualizer/datos_zonificacion.js` n'est publié que si c'est un choix volontaire ;
-- `data/sample_output.js` reste un échantillon raisonnable.
+- `visualizer/zoning_data.js` n'est publié que si c'est un choix volontaire ;
+- `data/sample_zoning_output.js` reste un échantillon raisonnable.
 
 ---
 
@@ -106,7 +106,7 @@ Pour publier une démo statique :
 
 La page sera disponible à l'adresse indiquée par GitHub Pages.
 
-Attention : le visualiseur charge `datos_zonificacion.js`. Si ce fichier n'est pas publié avec des données réelles, la carte affichera une démonstration vide ou partielle.
+Attention : le visualiseur charge `zoning_data.js`. Si ce fichier n'est pas publié avec des données réelles, la carte affichera une démonstration vide ou partielle.
 
 ---
 

@@ -110,7 +110,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cs2-minneapolis-zoning"
+name = "cs2-real-zoning-extractor"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
