@@ -1,0 +1,57 @@
+# =========================
+# SORTIES DE ZONAGE GENEREES
+# =========================
+
+visualizer/zoning_data.js
+src/zoning_data.js
+*.log
+
+# Conserver seulement l'echantillon leger.
+!data/sample_zoning_output.js
+
+
+# =========================
+# PYTHON
+# =========================
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+src/.venv/
+
+
+# =========================
+# OUTILS LOCAUX NODE / MCP
+# =========================
+
+node_modules/
+
+
+# =========================
+# IDE / EDITEUR
+# =========================
+
+.vscode/
+.idea/
+
+
+# =========================
+# FICHIERS SYSTEME
+# =========================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# =========================
+# TEMPORAIRE / ANALYSE LOCALE
+# =========================
+
+arbo.txt
+*.tmp
