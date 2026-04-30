@@ -1,6 +1,6 @@
 # Publication du dépôt sur GitHub
 
-Cette note décrit une publication propre du projet sous forme de dépôt public générique.
+Cette note décrit une publication propre du projet sous forme de dépôt GitHub.
 
 Remplacez les noms, chemins et URL d'exemple par ceux du dépôt réel.
 
@@ -10,8 +10,8 @@ Remplacez les noms, chemins et URL d'exemple par ceux du dépôt réel.
 
 1. Ouvrez [github.com/new](https://github.com/new).
 2. Renseignez :
-   - **Repository name:** `cs2-real-zoning-extractor` ou le nom choisi pour le fork ;
-   - **Description:** `Extracteur SIG de zonage OpenStreetMap pour Cities: Skylines 2` ;
+   - **Repository name:** `cs2-minneapolis-zoning`, `cs2-real-osm-extractor` ou le nom choisi pour le projet ;
+   - **Description:** `Extracteur SIG OpenStreetMap pour Cities: Skylines 2` ;
    - **Visibility:** Public ou Private selon le besoin ;
    - **Initialize repository:** laissez les cases décochées si le dépôt local existe déjà.
 3. Cliquez sur **Create repository**.
@@ -33,8 +33,9 @@ Avant de publier, vérifiez en particulier :
 - les environnements locaux (`.venv/`) ne sont pas ajoutés ;
 - les caches Python (`__pycache__/`) ne sont pas ajoutés ;
 - les fichiers générés lourds ne sont pas ajoutés par accident ;
-- `visualizer/zoning_data.js` n'est publié que si c'est un choix volontaire ;
+- `visualizer/zoning_data.js` n'est publié que si c'est un choix volontaire, car il peut devenir très volumineux ;
 - `data/sample_zoning_output.js` reste un échantillon raisonnable.
+- aucun fichier temporaire ou résultat d'essai local n'est présent à la racine.
 
 ---
 
@@ -46,7 +47,7 @@ Si le dépôt n'est pas encore initialisé :
 git init
 git add .
 git status
-git commit -m "feat: publish generic CS2 zoning extractor"
+git commit -m "feat: publish CS2 OSM extractor"
 ```
 
 Ajoutez ensuite le dépôt distant :
@@ -70,13 +71,13 @@ git push
 
 Dans l'onglet principal du dépôt, configurez la section **About** :
 
-- **Description:** `Extracteur SIG de zonage OpenStreetMap pour Cities: Skylines 2`
+- **Description:** `Extracteur SIG OpenStreetMap pour Cities: Skylines 2`
 - **Website:** laissez vide, ou indiquez l'URL GitHub Pages si elle existe
 - **Topics:**
 
 ```text
 cities-skylines-2 gis openstreetmap overpass-api leaflet
-urban-planning open-source python zoning
+urban-planning open-source python zoning osm-data
 ```
 
 ---
@@ -97,25 +98,44 @@ Avant de partager le dépôt :
 
 ## Option — GitHub Pages pour le visualiseur
 
-Pour publier une démo statique :
+GitHub Pages ne permet pas de sélectionner directement `/visualizer` comme dossier de publication via **Deploy from a branch**. Avec la structure actuelle, utilisez l'une des deux options suivantes.
+
+### Option A — Publier la racine du dépôt
 
 1. ouvrez **Settings → Pages** ;
 2. choisissez **Deploy from a branch** ;
-3. sélectionnez `main` et le dossier `/visualizer` ;
-4. enregistrez.
+3. sélectionnez `main` et le dossier `/` ;
+4. enregistrez ;
+5. ouvrez ensuite l'URL :
 
-La page sera disponible à l'adresse indiquée par GitHub Pages.
+```text
+https://<owner>.github.io/<repo>/visualizer/
+```
+
+### Option B — Utiliser GitHub Actions
+
+Utilisez cette option si vous voulez publier uniquement le contenu de `visualizer/` sans exposer toute la racine du dépôt. Il faudra ajouter un workflow GitHub Actions qui copie ou publie le dossier `visualizer/` comme artefact Pages.
 
 Attention : le visualiseur charge `zoning_data.js`. Si ce fichier n'est pas publié avec des données réelles, la carte affichera une démonstration vide ou partielle.
+
+Par défaut, `visualizer/zoning_data.js` est ignoré par `.gitignore` pour éviter de publier un gros fichier généré. Pour une démo publique, créez volontairement un fichier léger ou assumez explicitement sa publication.
 
 ---
 
 ## Vérification de taille des fichiers
 
-Avant un push important, listez les plus gros fichiers suivis :
+Avant un push important, listez les plus gros fichiers suivis.
+
+Avec Git Bash :
 
 ```bash
 git ls-files | xargs ls -lh | sort -k5 -rh | head -20
+```
+
+Avec PowerShell :
+
+```powershell
+git ls-files | ForEach-Object { Get-Item $_ } | Sort-Object Length -Descending | Select-Object -First 20 FullName,Length
 ```
 
 Si un fichier généré volumineux apparaît sans intention claire, retirez-le du commit et vérifiez `.gitignore`.
