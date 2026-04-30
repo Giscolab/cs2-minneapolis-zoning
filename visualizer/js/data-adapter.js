@@ -22,6 +22,12 @@
     },
     DATA_MIXED: function () {
       return typeof DATA_MIXED === "undefined" ? [] : DATA_MIXED;
+    },
+    DATA_ROADS: function () {
+      return typeof DATA_ROADS === "undefined" ? [] : DATA_ROADS;
+    },
+    DATA_PATHS: function () {
+      return typeof DATA_PATHS === "undefined" ? [] : DATA_PATHS;
     }
   };
 
@@ -68,6 +74,20 @@
     });
   }
 
+  function featureMatchesLayer(feature, layer) {
+    if (layer.zone && feature.zone !== layer.zone) {
+      return false;
+    }
+    if (layer.subcategory && feature.subcategory !== layer.subcategory) {
+      return false;
+    }
+    return true;
+  }
+
+  function minimumCoordCount(layer) {
+    return layer.geometry === "line" ? 2 : 3;
+  }
+
   function createDataset(config) {
     var sources = {};
     var missingSources = [];
@@ -91,11 +111,11 @@
     var layers = config.layers.map(function (layer) {
       var source = sources[layer.source] || { features: [], count: 0 };
       var rawFeatures = source.features.filter(function (feature) {
-        return !layer.zone || feature.zone === layer.zone;
+        return featureMatchesLayer(feature, layer);
       });
       var features = rawFeatures.map(function (feature) {
         var coords = normalizeCoords(feature.coords);
-        if (coords.length < 3) {
+        if (coords.length < minimumCoordCount(layer)) {
           return null;
         }
         extendBounds(bounds, coords);

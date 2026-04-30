@@ -12,14 +12,55 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from overpass_client import query_with_retry
-from classifiers import classify_residential, classify_commercial, classify_parking
+from overpass_client import build_paths_query, build_roads_query, query_with_retry
+from classifiers import (
+    classify_commercial,
+    classify_parking,
+    classify_path,
+    classify_residential,
+    classify_road,
+)
 from cs2_zones import CS2_LABELS, EXAMPLE_BBOX_PARIS, build_queries
+
+
+ROAD_TAG_KEYS = (
+    "highway",
+    "lanes",
+    "oneway",
+    "maxspeed",
+    "surface",
+    "bridge",
+    "tunnel",
+    "junction",
+    "cycleway",
+    "busway",
+    "sidewalk",
+)
+
+
+PATH_TAG_KEYS = (
+    "highway",
+    "surface",
+    "bridge",
+    "tunnel",
+    "lit",
+    "access",
+    "foot",
+    "bicycle",
+    "sidewalk",
+)
 
 
 def coords_from_way(element: dict) -> list | None:
     geom = element.get("geometry", [])
     if len(geom) < 3:
+        return None
+    return [[pt["lat"], pt["lon"]] for pt in geom]
+
+
+def coords_from_line_way(element: dict) -> list | None:
+    geom = element.get("geometry", [])
+    if len(geom) < 2:
         return None
     return [[pt["lat"], pt["lon"]] for pt in geom]
 
@@ -42,6 +83,28 @@ def extract_coords(element: dict) -> list | None:
     if element.get("type") == "relation":
         return coords_from_relation(element)
     return None
+
+
+def extract_line_coords(element: dict) -> list | None:
+    if element.get("type") == "way":
+        return coords_from_line_way(element)
+    return None
+
+
+def extract_road_tags(tags: dict) -> dict:
+    return {
+        key: tags[key]
+        for key in ROAD_TAG_KEYS
+        if tags.get(key) is not None and str(tags.get(key)).strip() != ""
+    }
+
+
+def extract_path_tags(tags: dict) -> dict:
+    return {
+        key: tags[key]
+        for key in PATH_TAG_KEYS
+        if tags.get(key) is not None and str(tags.get(key)).strip() != ""
+    }
 
 
 def parse_building_levels(value) -> int:
@@ -90,7 +153,7 @@ def main():
     print(f"BBOX         : {bbox}")
     print(f"Sortie       : {out_path}\n")
 
-    print("[1/3] Construction de l’index de densité résidentielle...")
+    print("[1/4] Construction de l’index de densité résidentielle...")
     bld_data = query_with_retry(queries["buildings_levels"], "buildings_levels")
     building_index: dict[int, int] = {}
 
@@ -103,19 +166,31 @@ def main():
 
     print(f"      Index : {len(building_index)} bâtiments avec données d’étages\n")
 
-    print("[2/3] Téléchargement des polygones de zonage...")
-    categories = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
+    print("[2/4] Téléchargement des polygones de zonage...")
+    zone_categories = ["residential", "commercial", "industrial", "retail", "parking", "office", "mixed"]
     raw: dict[str, list] = {}
 
-    for cat in categories:
+    for cat in zone_categories:
         result = query_with_retry(queries[cat], cat)
         raw[cat] = result.get("elements", [])
         print(f"      {cat}: {len(raw[cat])} éléments")
 
-    print("\n[3/3] Classification des zones...")
+    print("\n[3/4] Téléchargement des routes et chemins...")
+    roads_data = query_with_retry(build_roads_query(bbox), "roads")
+    raw["roads"] = roads_data.get("elements", [])
+    print(f"      roads: {len(raw['roads'])} éléments")
+    paths_data = query_with_retry(build_paths_query(bbox), "paths")
+    raw["paths"] = paths_data.get("elements", [])
+    print(f"      paths: {len(raw['paths'])} éléments")
 
-    output: dict[str, list] = {cat: [] for cat in categories}
+    print("\n[4/4] Classification des zones, routes et chemins...")
+
+    output: dict[str, list] = {cat: [] for cat in zone_categories}
+    output["roads"] = []
+    output["paths"] = []
     skipped = 0
+    skipped_roads = 0
+    skipped_paths = 0
     commercial_ids: set[int] = set()
 
     for el in raw["commercial"]:
@@ -243,9 +318,53 @@ def main():
             "cs2": CS2_LABELS["mixed"],
         })
 
+    for el in raw["roads"]:
+        tags = el.get("tags") or {}
+        coords = extract_line_coords(el)
+
+        if not coords:
+            skipped_roads += 1
+            continue
+
+        classification = classify_road(tags)
+
+        output["roads"].append({
+            "id": el.get("id"),
+            "name": tags.get("name") or "Néant",
+            "category": "Roads",
+            "subcategory": classification["subcategory"],
+            "sourceTag": classification["sourceTag"],
+            "confidence": classification["confidence"],
+            "coords": coords,
+            "tags": extract_road_tags(tags),
+        })
+
+    for el in raw["paths"]:
+        tags = el.get("tags") or {}
+        coords = extract_line_coords(el)
+
+        if not coords:
+            skipped_paths += 1
+            continue
+
+        classification = classify_path(tags)
+
+        output["paths"].append({
+            "id": el.get("id"),
+            "name": tags.get("name") or "Néant",
+            "category": "Paths",
+            "subcategory": classification["subcategory"],
+            "sourceTag": classification["sourceTag"],
+            "confidence": classification["confidence"],
+            "coords": coords,
+            "tags": extract_path_tags(tags),
+        })
+
     total = sum(len(v) for v in output.values())
     res = output["residential"]
     com = output["commercial"]
+    roads = output["roads"]
+    paths = output["paths"]
 
     print(f"\n  Résidentiel haut/moyen/bas : "
           f"{sum(1 for r in res if r['zone'] == 'high')} / "
@@ -259,7 +378,11 @@ def main():
     for cat in ["industrial", "retail", "parking", "office", "mixed"]:
         print(f"  {cat:<12}              : {len(output[cat])}")
 
+    print(f"  Routes récupérées          : {len(roads)}")
+    print(f"  Chemins/piéton récupérés   : {len(paths)}")
     print(f"  Ignorés sans géométrie     : {skipped}")
+    print(f"  Routes ignorées sans géom. : {skipped_roads}")
+    print(f"  Chemins ignorés sans géom. : {skipped_paths}")
     print(f"  TOTAL                      : {total}")
 
     ts = datetime.now(timezone.utc).isoformat()
@@ -268,11 +391,11 @@ def main():
         f"// Généré par extract_zoning.py — {ts}",
         f"// Ville / zone : {city}",
         f"// BBOX : {bbox}",
-        f"// Total polygones : {total}",
+        f"// Total objets : {total}",
         "",
     ]
 
-    for cat in categories:
+    for cat in zone_categories + ["roads", "paths"]:
         var = f"DATA_{cat.upper()}"
         lines.append(f"const {var} = {json.dumps(output[cat], ensure_ascii=False)};")
 
@@ -280,7 +403,7 @@ def main():
     out_path.write_text("\n".join(lines), encoding="utf-8")
     size_mb = out_path.stat().st_size / (1024 * 1024)
 
-    print(f"\nTerminé. {out_path} — {size_mb:.1f} MB — {total} polygones")
+    print(f"\nTerminé. {out_path} — {size_mb:.1f} MB — {total} objets")
 
 
 if __name__ == "__main__":

@@ -23,6 +23,50 @@ HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded",
 }
 
+ROAD_HIGHWAY_VALUES = "|".join((
+    "motorway",
+    "trunk",
+    "primary",
+    "secondary",
+    "tertiary",
+    "unclassified",
+    "residential",
+    "living_street",
+    "service",
+    "motorway_link",
+    "trunk_link",
+    "primary_link",
+    "secondary_link",
+    "tertiary_link",
+))
+
+PATH_HIGHWAY_VALUES = "|".join(("footway", "path", "steps", "pedestrian"))
+
+
+def build_roads_query(bbox: str) -> str:
+    """
+    Construit la requête Overpass dédiée aux routes.
+
+    DATA_ROADS ne garde que les voies routières utiles pour une lecture CS2.
+    Les chemins piétons sont extraits séparément dans DATA_PATHS.
+    """
+    return f"""
+[out:json][timeout:180];
+way["highway"~"^({ROAD_HIGHWAY_VALUES})$"]({bbox});
+out geom;
+""".strip()
+
+
+def build_paths_query(bbox: str) -> str:
+    """
+    Construit la requête Overpass dédiée aux chemins et rues piétonnes.
+    """
+    return f"""
+[out:json][timeout:180];
+way["highway"~"^({PATH_HIGHWAY_VALUES})$"]({bbox});
+out geom;
+""".strip()
+
 
 def query_with_retry(query: str, label: str, max_attempts: int = 3) -> dict:
     """

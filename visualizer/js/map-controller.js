@@ -57,6 +57,38 @@
       "</article>";
   }
 
+  function addFeatureToGroup(item, group) {
+    var definition = item.layer;
+    var strokeColor = chooseFeatureColor(item.feature, definition.stroke || definition.color);
+    var shape;
+
+    if (definition.geometry === "line") {
+      shape = L.polyline(item.coords, {
+        color: strokeColor,
+        opacity: 0.92,
+        weight: definition.lineWeight || 2,
+        lineCap: "round",
+        lineJoin: "round"
+      });
+    } else {
+      shape = L.polygon(item.coords, {
+        color: definition.stroke,
+        fillColor: chooseFeatureColor(item.feature, definition.color),
+        fillOpacity: 0.48,
+        opacity: 0.9,
+        weight: 1,
+        lineJoin: "round"
+      });
+    }
+
+    shape.bindPopup(buildPopup(item), {
+      maxWidth: 340,
+      minWidth: 240,
+      closeButton: true
+    });
+    shape.addTo(group);
+  }
+
   function create(options) {
     if (typeof L === "undefined") {
       throw new Error("Leaflet n'est pas chargé.");
@@ -86,21 +118,7 @@
       layerState[definition.key] = true;
 
       layerData.features.forEach(function (item) {
-        var fillColor = chooseFeatureColor(item.feature, definition.color);
-        var polygon = L.polygon(item.coords, {
-          color: definition.stroke,
-          fillColor: fillColor,
-          fillOpacity: 0.48,
-          opacity: 0.9,
-          weight: 1,
-          lineJoin: "round"
-        });
-        polygon.bindPopup(buildPopup(item), {
-          maxWidth: 340,
-          minWidth: 240,
-          closeButton: true
-        });
-        polygon.addTo(group);
+        addFeatureToGroup(item, group);
       });
     });
 

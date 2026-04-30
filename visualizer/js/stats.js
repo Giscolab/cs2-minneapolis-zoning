@@ -16,6 +16,8 @@
     var parking = sourceCount(dataset, "parking");
     var office = sourceCount(dataset, "office");
     var mixed = sourceCount(dataset, "mixed");
+    var roads = sourceCount(dataset, "roads");
+    var paths = sourceCount(dataset, "paths");
 
     return {
       total: dataset.totalRaw,
@@ -25,14 +27,18 @@
       parking: parking,
       office: office,
       mixed: mixed,
+      roads: roads,
+      paths: paths,
       cards: [
-        { key: "total", label: "Polygones", value: dataset.totalRaw },
+        { key: "total", label: "Objets", value: dataset.totalRaw },
         { key: "residential", label: "Résidentiel", value: residential },
         { key: "commercial", label: "Commercial", value: commercial },
         { key: "industrial", label: "Industrie", value: industrial },
         { key: "parking", label: "Stationnement", value: parking },
         { key: "office", label: "Bureaux", value: office },
-        { key: "mixed", label: "Usage mixte", value: mixed }
+        { key: "mixed", label: "Usage mixte", value: mixed },
+        { key: "roads", label: "Routes", value: roads },
+        { key: "paths", label: "Chemins", value: paths }
       ]
     };
   }

@@ -20,7 +20,9 @@
       { key: "industrial", globalName: "DATA_INDUSTRIAL", label: "Industrie" },
       { key: "parking", globalName: "DATA_PARKING", label: "Stationnement" },
       { key: "office", globalName: "DATA_OFFICE", label: "Bureaux" },
-      { key: "mixed", globalName: "DATA_MIXED", label: "Usage mixte" }
+      { key: "mixed", globalName: "DATA_MIXED", label: "Usage mixte" },
+      { key: "roads", globalName: "DATA_ROADS", label: "Routes" },
+      { key: "paths", globalName: "DATA_PATHS", label: "Chemins/piéton" }
     ],
     layers: [
       {
@@ -150,6 +152,131 @@
         stroke: "#128894",
         cs2: "Usage mixte",
         realWorld: "Commerces + logements"
+      },
+      {
+        key: "road",
+        source: "roads",
+        subcategory: "Road",
+        category: "roads",
+        geometry: "line",
+        label: "Route",
+        description: "Rues et axes urbains classiques",
+        color: "#e8edf2",
+        stroke: "#e8edf2",
+        lineWeight: 2,
+        cs2: "Routes",
+        realWorld: "Route OSM"
+      },
+      {
+        key: "road_highway",
+        source: "roads",
+        subcategory: "Highway",
+        category: "roads",
+        geometry: "line",
+        label: "Autoroute",
+        description: "Motorways et trunks OSM",
+        color: "#ffb347",
+        stroke: "#ffb347",
+        lineWeight: 4,
+        cs2: "Routes",
+        realWorld: "Autoroute / voie rapide"
+      },
+      {
+        key: "road_ramp",
+        source: "roads",
+        subcategory: "Highway Ramp",
+        category: "roads",
+        geometry: "line",
+        label: "Bretelle d'autoroute",
+        description: "Liens motorway/trunk/primary",
+        color: "#ff7b54",
+        stroke: "#ff7b54",
+        lineWeight: 3,
+        cs2: "Routes",
+        realWorld: "Bretelle routière"
+      },
+      {
+        key: "road_service",
+        source: "roads",
+        subcategory: "Service Road",
+        category: "roads",
+        geometry: "line",
+        label: "Voie de service",
+        description: "Accès, parkings et dessertes",
+        color: "#9aa7b2",
+        stroke: "#9aa7b2",
+        lineWeight: 1,
+        cs2: "Routes",
+        realWorld: "Voie de service OSM"
+      },
+      {
+        key: "road_bridge",
+        source: "roads",
+        subcategory: "Bridge",
+        category: "roads",
+        geometry: "line",
+        label: "Pont",
+        description: "Routes marquées bridge=*",
+        color: "#7dd3fc",
+        stroke: "#7dd3fc",
+        lineWeight: 3,
+        cs2: "Routes",
+        realWorld: "Pont routier"
+      },
+      {
+        key: "road_tunnel",
+        source: "roads",
+        subcategory: "Tunnel",
+        category: "roads",
+        geometry: "line",
+        label: "Tunnel",
+        description: "Routes marquées tunnel=*",
+        color: "#c084fc",
+        stroke: "#c084fc",
+        lineWeight: 3,
+        cs2: "Routes",
+        realWorld: "Tunnel routier"
+      },
+      {
+        key: "road_roundabout",
+        source: "roads",
+        subcategory: "Roundabout",
+        category: "roads",
+        geometry: "line",
+        label: "Rond-point",
+        description: "Junction roundabout OSM",
+        color: "#facc15",
+        stroke: "#facc15",
+        lineWeight: 3,
+        cs2: "Routes",
+        realWorld: "Rond-point"
+      },
+      {
+        key: "road_unknown",
+        source: "roads",
+        subcategory: "Unknown Road",
+        category: "roads",
+        geometry: "line",
+        label: "Route inconnue",
+        description: "highway=* non classé",
+        color: "#f87171",
+        stroke: "#f87171",
+        lineWeight: 2,
+        cs2: "Routes",
+        realWorld: "Route OSM non classée"
+      },
+      {
+        key: "paths",
+        source: "paths",
+        category: "paths",
+        geometry: "line",
+        label: "Chemins/piéton",
+        description: "Footways, paths, steps et rues piétonnes",
+        color: "#d8b4fe",
+        stroke: "#d8b4fe",
+        lineWeight: 1,
+        cs2: "Chemins piétons",
+        realWorld: "Chemin ou rue piétonne OSM"
       }
     ]
   };

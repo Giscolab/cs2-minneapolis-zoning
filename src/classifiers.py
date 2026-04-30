@@ -101,3 +101,128 @@ def classify_parking(tags: dict) -> str:
         return "ramp"
 
     return "surface"
+
+
+def has_positive_tag(tags: dict, key: str) -> bool:
+    """
+    Vérifie qu'un tag OSM existe et n'exprime pas explicitement l'absence.
+    """
+    value = str(tags.get(key, "")).strip().lower()
+    return value not in ("", "no", "false", "0", "none")
+
+
+def classify_road(tags: dict) -> dict:
+    """
+    Classe un way routier OSM dans une grande famille lisible pour CS2.
+    """
+    highway = str(tags.get("highway", "")).strip().lower()
+    junction = str(tags.get("junction", "")).strip().lower()
+
+    if junction == "roundabout":
+        return {
+            "subcategory": "Roundabout",
+            "sourceTag": "junction=roundabout",
+            "confidence": "direct",
+        }
+
+    if has_positive_tag(tags, "bridge"):
+        return {
+            "subcategory": "Bridge",
+            "sourceTag": f"bridge={tags.get('bridge')}",
+            "confidence": "direct",
+        }
+
+    if has_positive_tag(tags, "tunnel"):
+        return {
+            "subcategory": "Tunnel",
+            "sourceTag": f"tunnel={tags.get('tunnel')}",
+            "confidence": "direct",
+        }
+
+    if highway in (
+        "motorway_link",
+        "trunk_link",
+        "primary_link",
+        "secondary_link",
+        "tertiary_link",
+    ):
+        return {
+            "subcategory": "Highway Ramp",
+            "sourceTag": f"highway={highway}",
+            "confidence": "direct",
+        }
+
+    if highway in ("motorway", "trunk"):
+        return {
+            "subcategory": "Highway",
+            "sourceTag": f"highway={highway}",
+            "confidence": "direct",
+        }
+
+    if highway == "service":
+        return {
+            "subcategory": "Service Road",
+            "sourceTag": "highway=service",
+            "confidence": "direct",
+        }
+
+    if highway in (
+        "primary",
+        "secondary",
+        "tertiary",
+        "residential",
+        "living_street",
+        "unclassified",
+    ):
+        return {
+            "subcategory": "Road",
+            "sourceTag": f"highway={highway}",
+            "confidence": "direct",
+        }
+
+    return {
+        "subcategory": "Unknown Road",
+        "sourceTag": f"highway={highway}" if highway else "highway=*",
+        "confidence": "unknown",
+    }
+
+
+def classify_path(tags: dict) -> dict:
+    """
+    Classe un way piéton extrait dans DATA_PATHS.
+    """
+    highway = str(tags.get("highway", "")).strip().lower()
+
+    if highway == "pedestrian":
+        return {
+            "subcategory": "Pedestrian Street",
+            "sourceTag": "highway=pedestrian",
+            "confidence": "direct",
+        }
+
+    if highway == "footway":
+        return {
+            "subcategory": "Footway",
+            "sourceTag": "highway=footway",
+            "confidence": "direct",
+        }
+
+    if highway == "steps":
+        return {
+            "subcategory": "Steps",
+            "sourceTag": "highway=steps",
+            "confidence": "direct",
+        }
+
+    if highway == "path":
+        return {
+            "subcategory": "Path",
+            "sourceTag": "highway=path",
+            "confidence": "direct",
+        }
+
+    return {
+        "subcategory": "Unknown Path",
+        "sourceTag": f"highway={highway}" if highway else "highway=*",
+        "confidence": "unknown",
+    }

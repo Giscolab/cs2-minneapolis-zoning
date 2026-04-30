@@ -55,7 +55,7 @@
     );
 
     button.querySelector(".layer-swatch").setAttribute("aria-hidden", "true");
-    button.querySelector(".layer-count").setAttribute("aria-label", layerData.count + " polygones");
+    button.querySelector(".layer-count").setAttribute("aria-label", layerData.count + " objets");
     return button;
   }
 
@@ -97,9 +97,9 @@
     setText("dataset-status", dataset.hasData ? "Données chargées" : "Aucune donnée");
     setText(
       "dataset-substatus",
-      dataset.hasData ? App.Stats.formatNumber(dataset.totalRaw) + " polygones détectés" : "Contrat DATA_* absent ou vide"
+      dataset.hasData ? App.Stats.formatNumber(dataset.totalRaw) + " objets détectés" : "Contrat DATA_* absent ou vide"
     );
-    setText("metrics-context", dataset.hasRenderableData ? "Polygones OSM exploitables" : "Mode attente de données");
+    setText("metrics-context", dataset.hasRenderableData ? "Objets OSM exploitables" : "Mode attente de données");
 
     if (status) {
       status.classList.toggle("is-empty", !dataset.hasData);
