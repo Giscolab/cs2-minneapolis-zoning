@@ -78,7 +78,7 @@
 
   function update(context, state) {
     var zoom = context.map.getZoom();
-    var command = buildCommand(getCityName(context.cityInput), state.worldMapBBoxText);
+    var command = buildCommand(getCityName(context.cityInput), state.heightmapBBoxText);
 
     context.currentWorldBBox = state.worldMapBBoxText;
     context.currentHeightmapBBox = state.heightmapBBoxText;
