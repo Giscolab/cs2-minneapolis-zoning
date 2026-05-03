@@ -132,13 +132,6 @@
           </div>
           <output id="cs2-helper-command">-</output>
         </div>
-        <div class="cs2-helper-output">
-          <div class="cs2-helper-output-heading">
-            <span>Contrat TimelineMod / Manifest JSON</span>
-            <button id="copy-cs2-timeline-manifest" type="button" class="copy-button">Copier</button>
-          </div>
-          <output id="cs2-helper-timeline-manifest">-</output>
-        </div>
       </section>
 
       <section class="controls-section" aria-labelledby="layers-title">

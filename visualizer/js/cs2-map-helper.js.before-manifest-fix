@@ -1,7 +1,7 @@
 (function (App) {
   "use strict";
 
-  var CS2_TARGET_PLAYABLE_METERS = 14335;
+  var CS2_TARGET_PLAYABLE_METERS = 14336;
   var HEIGHTMAP_PIXELS = 4096;
 
   function byId(id) {
@@ -143,14 +143,11 @@
 
   function update(context, state) {
     var zoom = context.map.getZoom();
-    var cityName = getCityName(context.cityInput);
-    var command = buildCommand(cityName, state.heightmapBBoxText);
-    var timelineManifest = buildTimelineManifest(cityName, state, command);
+    var command = buildCommand(getCityName(context.cityInput), state.heightmapBBoxText);
 
     context.currentWorldBBox = state.worldMapBBoxText;
     context.currentHeightmapBBox = state.heightmapBBoxText;
     context.currentCommand = command;
-    context.currentTimelineManifest = timelineManifest;
 
     syncInputs(context, state);
     setText(context.latOutput, formatNumber(state.center.lat, 6));
@@ -159,7 +156,6 @@
     setText(context.worldBBoxOutput, state.worldMapBBoxText);
     setText(context.heightmapBBoxOutput, state.heightmapBBoxText);
     setText(context.commandOutput, command);
-    setText(context.timelineManifestOutput, timelineManifest);
     setText(context.status, "Pas " + formatStep(state.stepMeters));
   }
 
