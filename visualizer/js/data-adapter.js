@@ -1,4 +1,4 @@
-(function (App) {
+﻿(function (App) {
   "use strict";
 
   var SOURCE_READERS = {
@@ -40,18 +40,34 @@
     return reader ? toArray(reader()) : [];
   }
 
+  function readSourceData(source, packData) {
+    if (
+      packData &&
+      packData.sources &&
+      Object.prototype.hasOwnProperty.call(packData.sources, source.key)
+    ) {
+      return toArray(packData.sources[source.key]);
+    }
+
+    return readGlobalArray(source.globalName);
+  }
+
   function normalizeCoord(coord) {
     if (!Array.isArray(coord) || coord.length < 2) {
       return null;
     }
+
     var lat = Number(coord[0]);
     var longitude = Number(coord[1]);
+
     if (!Number.isFinite(lat) || !Number.isFinite(longitude)) {
       return null;
     }
+
     if (lat < -90 || lat > 90 || longitude < -180 || longitude > 180) {
       return null;
     }
+
     return [lat, longitude];
   }
 
@@ -59,6 +75,7 @@
     if (!Array.isArray(coords)) {
       return [];
     }
+
     return coords.map(normalizeCoord).filter(Boolean);
   }
 
@@ -66,6 +83,7 @@
     coords.forEach(function (coord) {
       var lat = coord[0];
       var longitude = coord[1];
+
       bounds.south = Math.min(bounds.south, lat);
       bounds.west = Math.min(bounds.west, longitude);
       bounds.north = Math.max(bounds.north, lat);
@@ -78,9 +96,11 @@
     if (layer.zone && feature.zone !== layer.zone) {
       return false;
     }
+
     if (layer.subcategory && feature.subcategory !== layer.subcategory) {
       return false;
     }
+
     return true;
   }
 
@@ -88,13 +108,20 @@
     return layer.geometry === "line" ? 2 : 3;
   }
 
-  function createDataset(config) {
+  function createDataset(config, packData) {
     var sources = {};
     var missingSources = [];
-    var bounds = { south: Infinity, west: Infinity, north: -Infinity, east: -Infinity, valid: false };
+    var bounds = {
+      south: Infinity,
+      west: Infinity,
+      north: -Infinity,
+      east: -Infinity,
+      valid: false
+    };
 
     config.dataSources.forEach(function (source) {
-      var data = readGlobalArray(source.globalName);
+      var data = readSourceData(source, packData);
+
       sources[source.key] = {
         key: source.key,
         globalName: source.globalName,
@@ -103,6 +130,7 @@
         count: data.length,
         missing: data.length === 0
       };
+
       if (!data.length) {
         missingSources.push(source.globalName);
       }
@@ -110,15 +138,20 @@
 
     var layers = config.layers.map(function (layer) {
       var source = sources[layer.source] || { features: [], count: 0 };
+
       var rawFeatures = source.features.filter(function (feature) {
         return featureMatchesLayer(feature, layer);
       });
+
       var features = rawFeatures.map(function (feature) {
         var coords = normalizeCoords(feature.coords);
+
         if (coords.length < minimumCoordCount(layer)) {
           return null;
         }
+
         extendBounds(bounds, coords);
+
         return {
           layer: layer,
           feature: feature,
@@ -139,11 +172,14 @@
     var totalRaw = Object.keys(sources).reduce(function (total, key) {
       return total + sources[key].count;
     }, 0);
+
     var totalRenderable = layers.reduce(function (total, layer) {
       return total + layer.count;
     }, 0);
 
     return {
+      dataMode: packData && packData.mode ? packData.mode : "legacy",
+      packIndexPath: packData ? packData.indexPath : null,
       sources: sources,
       layers: layers,
       totalRaw: totalRaw,

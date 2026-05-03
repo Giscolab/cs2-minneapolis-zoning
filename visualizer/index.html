@@ -181,7 +181,7 @@
     <section id="empty-state" class="state-card empty-state" hidden aria-live="polite">
       <p class="eyebrow">Aucune donnée détectée</p>
       <h2>Le visualiseur est prêt.</h2>
-      <p>Chargez un fichier <code>zoning_data.js</code> généré par le pipeline pour afficher les objets réels.</p>
+      <p>Générez un pack <code>exports/zone-cs2</code> avec le pipeline pour afficher les objets réels. Le mode <code>zoning_data.js</code> reste disponible en fallback legacy.</p>
     </section>
 
     <section id="app-error" class="state-card error-state" hidden role="alert">
@@ -201,6 +201,7 @@
   <script src="./data/world_capitals.js"></script>
   <script src="./js/config.js"></script>
   <script src="./js/safe-html.js"></script>
+  <script src="./js/pack-loader.js"></script>
   <script src="./js/data-adapter.js"></script>
   <script src="./js/stats.js"></script>
   <script src="./js/map-controller.js"></script>
