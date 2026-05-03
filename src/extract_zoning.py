@@ -121,6 +121,275 @@ def parse_building_levels(value) -> int:
         return 0
 
 
+
+MAJOR_ROAD_HIGHWAYS = {
+    "motorway",
+    "trunk",
+    "primary",
+    "secondary",
+    "tertiary",
+    "motorway_link",
+    "trunk_link",
+    "primary_link",
+    "secondary_link",
+    "tertiary_link",
+}
+
+DRIVEABLE_ROAD_HIGHWAYS = MAJOR_ROAD_HIGHWAYS | {
+    "residential",
+    "unclassified",
+    "living_street",
+    "service",
+    "road",
+}
+
+
+def slugify_city(value: str) -> str:
+    text = str(value or "zone-cs2").strip().lower()
+    out = []
+    previous_dash = False
+
+    for char in text:
+        if char.isalnum():
+            out.append(char)
+            previous_dash = False
+        elif not previous_dash:
+            out.append("-")
+            previous_dash = True
+
+    slug = "".join(out).strip("-")
+    return slug or "zone-cs2"
+
+
+def default_pack_dir(city: str) -> Path:
+    project_root = Path(__file__).resolve().parent.parent
+    return project_root / "exports" / slugify_city(city)
+
+
+def latlon_to_lonlat(coords: list) -> list:
+    return [[point[1], point[0]] for point in coords]
+
+
+def close_polygon_ring(coords: list) -> list:
+    ring = latlon_to_lonlat(coords)
+
+    if ring and ring[0] != ring[-1]:
+        ring.append(ring[0])
+
+    return ring
+
+
+def feature_properties(item: dict) -> dict:
+    return {
+        key: value
+        for key, value in item.items()
+        if key != "coords"
+    }
+
+
+def polygon_feature(item: dict) -> dict | None:
+    coords = item.get("coords") or []
+    ring = close_polygon_ring(coords)
+
+    if len(ring) < 4:
+        return None
+
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": [ring],
+        },
+        "properties": feature_properties(item),
+    }
+
+
+def line_feature(item: dict) -> dict | None:
+    coords = item.get("coords") or []
+    line = latlon_to_lonlat(coords)
+
+    if len(line) < 2:
+        return None
+
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": line,
+        },
+        "properties": feature_properties(item),
+    }
+
+
+def feature_collection(features: list) -> dict:
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
+
+
+def build_features(items: list, geometry_type: str) -> list:
+    features = []
+
+    for item in items:
+        if geometry_type == "polygon":
+            feature = polygon_feature(item)
+        elif geometry_type == "line":
+            feature = line_feature(item)
+        else:
+            raise ValueError(f"Type de géométrie non supporté : {geometry_type}")
+
+        if feature is not None:
+            features.append(feature)
+
+    return features
+
+
+def write_geojson(path: Path, features: list) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(feature_collection(features), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def road_highway_value(item: dict) -> str:
+    tags = item.get("tags") or {}
+    value = tags.get("highway") or item.get("sourceTag") or ""
+    return str(value).strip().lower()
+
+
+def is_major_road(item: dict) -> bool:
+    return road_highway_value(item) in MAJOR_ROAD_HIGHWAYS
+
+
+def is_driveable_road(item: dict) -> bool:
+    return road_highway_value(item) in DRIVEABLE_ROAD_HIGHWAYS
+
+
+def write_split_layers_pack(
+    output: dict[str, list],
+    city: str,
+    bbox: str,
+    out_dir: Path,
+    generated_at: str,
+    report: dict,
+) -> None:
+    zone_categories = [
+        "residential",
+        "commercial",
+        "industrial",
+        "retail",
+        "parking",
+        "office",
+        "mixed",
+    ]
+
+    geojson_dir = out_dir / "geojson"
+    reports_dir = out_dir / "reports"
+
+    base_features = []
+    layer_index = {
+        "generatedAt": generated_at,
+        "city": city,
+        "bbox": bbox,
+        "bboxOrder": "south,west,north,east",
+        "layers": [],
+    }
+
+    def write_layer(name: str, features: list, geometry_type: str, base_layer: bool = True) -> None:
+        relative_path = f"geojson/{name}"
+        write_geojson(out_dir / relative_path, features)
+
+        if base_layer:
+            base_features.extend(features)
+
+        layer_index["layers"].append({
+            "name": name.replace(".geojson", ""),
+            "file": relative_path,
+            "geometryType": geometry_type,
+            "count": len(features),
+        })
+
+    zoning_features = []
+
+    for cat in zone_categories:
+        features = build_features(output.get(cat, []), "polygon")
+        zoning_features.extend(features)
+        write_layer(f"{cat}.geojson", features, "Polygon", base_layer=True)
+
+    write_layer(
+        "zoning_polygons.geojson",
+        zoning_features,
+        "Polygon",
+        base_layer=False,
+    )
+
+    road_items = output.get("roads", [])
+    road_features = build_features(road_items, "line")
+    write_layer("roads.geojson", road_features, "LineString", base_layer=True)
+
+    major_road_features = build_features(
+        [item for item in road_items if is_major_road(item)],
+        "line",
+    )
+    write_layer(
+        "roads_major_clipped.geojson",
+        major_road_features,
+        "LineString",
+        base_layer=False,
+    )
+
+    driveable_road_features = build_features(
+        [item for item in road_items if is_driveable_road(item)],
+        "line",
+    )
+    write_layer(
+        "roads_driveable_clipped.geojson",
+        driveable_road_features,
+        "LineString",
+        base_layer=False,
+    )
+
+    path_features = build_features(output.get("paths", []), "line")
+    write_layer("paths.geojson", path_features, "LineString", base_layer=True)
+
+    write_geojson(geojson_dir / "all_features.geojson", base_features)
+
+    layer_index["layers"].append({
+        "name": "all_features",
+        "file": "geojson/all_features.geojson",
+        "geometryType": "Mixed",
+        "count": len(base_features),
+    })
+
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    (reports_dir / "layer_index.json").write_text(
+        json.dumps(layer_index, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    extraction_report = {
+        "generatedAt": generated_at,
+        "city": city,
+        "bbox": bbox,
+        "bboxOrder": "south,west,north,east",
+        "outputDirectory": str(out_dir),
+        "summary": report,
+        "layers": layer_index["layers"],
+        "notes": [
+            "Les coordonnées GeoJSON sont exportées en ordre standard [longitude, latitude].",
+            "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson ne sont pas encore produits par extract_zoning.py.",
+        ],
+    }
+
+    (reports_dir / "extraction_report.json").write_text(
+        json.dumps(extraction_report, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Extrait les données de zonage OpenStreetMap pour Cities: Skylines 2"
@@ -137,21 +406,34 @@ def main():
     )
     parser.add_argument(
         "--out",
-        default="../visualizer/zoning_data.js",
-        help="Chemin du fichier JavaScript généré.",
+        default=None,
+        help="Chemin optionnel du fichier JavaScript legacy g?n?r?. Exemple : ./visualizer/zoning_data.js",
+    )
+
+    parser.add_argument(
+        "--out-dir",
+        default=None,
+        help="Dossier de sortie du pack GeoJSON scind?. Exemple : ../exports/zone-cs2",
+    )
+    parser.add_argument(
+        "--split-layers",
+        action="store_true",
+        help="Exporte aussi les couches GeoJSON s?par?es par type.",
     )
 
     args = parser.parse_args()
 
     bbox = args.bbox
     city = args.city
-    out_path = Path(args.out)
+    out_path = Path(args.out) if args.out else None
+    pack_dir = Path(args.out_dir) if args.out_dir else default_pack_dir(city)
     queries = build_queries(bbox)
 
     print("Extracteur de zonage réel pour CS2 v1.0")
     print(f"Ville / zone : {city}")
     print(f"BBOX         : {bbox}")
-    print(f"Sortie       : {out_path}\n")
+    print(f"Pack exports : {pack_dir}")
+    print(f"Legacy JS    : {out_path if out_path else 'd?sactiv?'}\n")
 
     print("[1/4] Construction de l’index de densité résidentielle...")
     bld_data = query_with_retry(queries["buildings_levels"], "buildings_levels")
@@ -387,23 +669,48 @@ def main():
 
     ts = datetime.now(timezone.utc).isoformat()
 
-    lines = [
-        f"// Généré par extract_zoning.py — {ts}",
-        f"// Ville / zone : {city}",
-        f"// BBOX : {bbox}",
-        f"// Total objets : {total}",
-        "",
-    ]
+    split_report = {
+        "total": total,
+        "skippedPolygonsWithoutGeometry": skipped,
+        "skippedRoadsWithoutGeometry": skipped_roads,
+        "skippedPathsWithoutGeometry": skipped_paths,
+        "counts": {
+            cat: len(output.get(cat, []))
+            for cat in zone_categories + ["roads", "paths"]
+        },
+    }
 
-    for cat in zone_categories + ["roads", "paths"]:
-        var = f"DATA_{cat.upper()}"
-        lines.append(f"const {var} = {json.dumps(output[cat], ensure_ascii=False)};")
+    write_split_layers_pack(
+        output=output,
+        city=city,
+        bbox=bbox,
+        out_dir=pack_dir,
+        generated_at=ts,
+        report=split_report,
+    )
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text("\n".join(lines), encoding="utf-8")
-    size_mb = out_path.stat().st_size / (1024 * 1024)
+    print(f"\nPack GeoJSON scind? : {pack_dir}")
 
-    print(f"\nTerminé. {out_path} — {size_mb:.1f} MB — {total} objets")
+    if out_path is not None:
+        lines = [
+            f"// G?n?r? par extract_zoning.py ? {ts}",
+            f"// Ville / zone : {city}",
+            f"// BBOX : {bbox}",
+            f"// Total objets : {total}",
+            "",
+        ]
+
+        for cat in zone_categories + ["roads", "paths"]:
+            var = f"DATA_{cat.upper()}"
+            lines.append(f"const {var} = {json.dumps(output[cat], ensure_ascii=False)};")
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text("\n".join(lines), encoding="utf-8")
+        size_mb = out_path.stat().st_size / (1024 * 1024)
+
+        print(f"Legacy JS g?n?r? : {out_path} ? {size_mb:.1f} MB ? {total} objets")
+    else:
+        print("Legacy JS : non g?n?r?. Utilise --out si tu veux encore produire zoning_data.js.")
 
 
 if __name__ == "__main__":

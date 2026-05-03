@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-05-03T20:10:35.617926+00:00",
+  "city": "Zone CS2",
+  "bbox": "33.581040,-117.870958,33.752752,-117.664642",
+  "bboxOrder": "south,west,north,east",
+  "outputDirectory": "exports\\zone-cs2",
+  "summary": {
+    "total": 76425,
+    "skippedPolygonsWithoutGeometry": 0,
+    "skippedRoadsWithoutGeometry": 0,
+    "skippedPathsWithoutGeometry": 0,
+    "counts": {
+      "residential": 691,
+      "commercial": 792,
+      "industrial": 245,
+      "retail": 255,
+      "parking": 2070,
+      "office": 293,
+      "mixed": 0,
+      "roads": 53449,
+      "paths": 18630
+    }
+  },
+  "layers": [
+    {
+      "name": "residential",
+      "file": "geojson/residential.geojson",
+      "geometryType": "Polygon",
+      "count": 691
+    },
+    {
+      "name": "commercial",
+      "file": "geojson/commercial.geojson",
+      "geometryType": "Polygon",
+      "count": 792
+    },
+    {
+      "name": "industrial",
+      "file": "geojson/industrial.geojson",
+      "geometryType": "Polygon",
+      "count": 245
+    },
+    {
+      "name": "retail",
+      "file": "geojson/retail.geojson",
+      "geometryType": "Polygon",
+      "count": 255
+    },
+    {
+      "name": "parking",
+      "file": "geojson/parking.geojson",
+      "geometryType": "Polygon",
+      "count": 2070
+    },
+    {
+      "name": "office",
+      "file": "geojson/office.geojson",
+      "geometryType": "Polygon",
+      "count": 293
+    },
+    {
+      "name": "mixed",
+      "file": "geojson/mixed.geojson",
+      "geometryType": "Polygon",
+      "count": 0
+    },
+    {
+      "name": "zoning_polygons",
+      "file": "geojson/zoning_polygons.geojson",
+      "geometryType": "Polygon",
+      "count": 4346
+    },
+    {
+      "name": "roads",
+      "file": "geojson/roads.geojson",
+      "geometryType": "LineString",
+      "count": 53449
+    },
+    {
+      "name": "roads_major_clipped",
+      "file": "geojson/roads_major_clipped.geojson",
+      "geometryType": "LineString",
+      "count": 14187
+    },
+    {
+      "name": "roads_driveable_clipped",
+      "file": "geojson/roads_driveable_clipped.geojson",
+      "geometryType": "LineString",
+      "count": 53449
+    },
+    {
+      "name": "paths",
+      "file": "geojson/paths.geojson",
+      "geometryType": "LineString",
+      "count": 18630
+    },
+    {
+      "name": "all_features",
+      "file": "geojson/all_features.geojson",
+      "geometryType": "Mixed",
+      "count": 76425
+    }
+  ],
+  "notes": [
+    "Les coordonnées GeoJSON sont exportées en ordre standard [longitude, latitude].",
+    "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson ne sont pas encore produits par extract_zoning.py."
+  ]
+}

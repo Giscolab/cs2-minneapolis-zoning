@@ -141,16 +141,49 @@
     }
   }
 
+
+  function buildTimelineConfig(state) {
+    var centerLat = roundNumber(state.center.lat, 6);
+    var centerLon = roundNumber(state.center.lng, 6);
+    var worldScale = roundNumber(
+      CS2_TARGET_PLAYABLE_METERS / (Number(state.heightmapSizeKm) * 1000),
+      8
+    );
+
+    var config = {
+      useGeoJsonCenter: false,
+      originLon: centerLon,
+      originLat: centerLat,
+      worldOriginX: 0,
+      worldOriginZ: 0,
+      worldScale: worldScale,
+      overlayRotationDegrees: 0,
+      overlayScaleX: 1,
+      overlayScaleZ: 1,
+      flipX: false,
+      flipZ: false,
+      groundMargin: 512,
+      segmentWidth: 2,
+      segmentHeight: 2,
+      roadSegmentWidth: 2,
+      roadSegmentHeight: 2,
+      pointStride: 1
+    };
+
+    return JSON.stringify(config, null, 2);
+  }
   function update(context, state) {
     var zoom = context.map.getZoom();
     var cityName = getCityName(context.cityInput);
     var command = buildCommand(cityName, state.heightmapBBoxText);
     var timelineManifest = buildTimelineManifest(cityName, state, command);
+    var timelineConfig = buildTimelineConfig(state);
 
     context.currentWorldBBox = state.worldMapBBoxText;
     context.currentHeightmapBBox = state.heightmapBBoxText;
     context.currentCommand = command;
     context.currentTimelineManifest = timelineManifest;
+    context.currentTimelineConfig = timelineConfig;
 
     syncInputs(context, state);
     setText(context.latOutput, formatNumber(state.center.lat, 6));
@@ -160,9 +193,83 @@
     setText(context.heightmapBBoxOutput, state.heightmapBBoxText);
     setText(context.commandOutput, command);
     setText(context.timelineManifestOutput, timelineManifest);
+    setText(context.timelineConfigOutput, timelineConfig);
     setText(context.status, "Pas " + formatStep(state.stepMeters));
   }
 
+
+  function downloadTimelineManifest(context) {
+    var manifestText = context.currentTimelineManifest || "";
+
+    if (!manifestText.trim()) {
+      console.warn("[CS2 Helper] Aucun manifest TimelineMod à télécharger.");
+      return;
+    }
+
+    var filename = "manifest.json";
+
+    try {
+      var manifest = JSON.parse(manifestText);
+      var city = String(manifest.city || "zone-cs2")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      filename = city ? city + "_manifest.json" : "manifest.json";
+    } catch (error) {
+      filename = "manifest.json";
+    }
+
+    var blob = new Blob([manifestText], {
+      type: "application/json;charset=utf-8"
+    });
+
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadTimelineConfig(context) {
+    var configText = context.currentTimelineConfig || "";
+
+    if (!configText.trim()) {
+      console.warn("[CS2 Helper] Aucun config TimelineMod à télécharger.");
+      return;
+    }
+
+    var city = getCityName(context.cityInput)
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    var filename = city ? city + "_config.json" : "config.json";
+
+    var blob = new Blob([configText], {
+      type: "application/json;charset=utf-8"
+    });
+
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
   function formatStep(stepMeters) {
     return stepMeters >= 1000 ? "1 km" : stepMeters + " m";
   }
@@ -222,6 +329,22 @@
         flashButton(context.copyTimelineManifest, "Copié");
       });
     });
+
+    context.downloadTimelineManifest.addEventListener("click", function () {
+      downloadTimelineManifest(context);
+      flashButton(context.downloadTimelineManifest, "Téléchargé");
+    });
+
+    context.copyTimelineConfig.addEventListener("click", function () {
+      copyText(context.currentTimelineConfig, function () {
+        flashButton(context.copyTimelineConfig, "Copié");
+      });
+    });
+
+    context.downloadTimelineConfig.addEventListener("click", function () {
+      downloadTimelineConfig(context);
+      flashButton(context.downloadTimelineConfig, "Téléchargé");
+    });
   }
 
   function bind(context) {
@@ -256,6 +379,7 @@
       heightmapBBoxOutput: byId("cs2-helper-heightmap-bbox"),
       commandOutput: byId("cs2-helper-command"),
       timelineManifestOutput: byId("cs2-helper-timeline-manifest"),
+      timelineConfigOutput: byId("cs2-helper-timeline-config"),
       moveNorth: byId("cs2-move-north"),
       moveSouth: byId("cs2-move-south"),
       moveEast: byId("cs2-move-east"),
@@ -266,6 +390,9 @@
       copyHeightmapBBox: byId("copy-cs2-heightmap-bbox"),
       copyCommand: byId("copy-cs2-command"),
       copyTimelineManifest: byId("copy-cs2-timeline-manifest"),
+      downloadTimelineManifest: byId("download-cs2-timeline-manifest"),
+      copyTimelineConfig: byId("copy-cs2-timeline-config"),
+      downloadTimelineConfig: byId("download-cs2-timeline-config"),
       currentWorldBBox: "",
       currentHeightmapBBox: "",
       currentCommand: ""
@@ -281,6 +408,7 @@
       !context.heightmapBBoxOutput ||
       !context.commandOutput ||
       !context.timelineManifestOutput ||
+      !context.timelineConfigOutput ||
       !context.moveNorth ||
       !context.moveSouth ||
       !context.moveEast ||

@@ -2,8 +2,8 @@
   "use strict";
 
   App.Config = {
-    fallbackBounds: [[48.766147, 2.16156], [48.945053, 2.485657]],
-    fallbackCenter: [48.8566, 2.3522],
+    fallbackBounds: [[33.409332, -118.077270], [33.924460, -117.458331]],
+    fallbackCenter: [33.666896, -117.767800],
     fallbackZoom: 11,
     tileLayer: {
       url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
