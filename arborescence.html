@@ -7,65 +7,89 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f7f7f4;
+      --bg: #f5f7f8;
       --panel: #ffffff;
-      --ink: #1f2933;
-      --muted: #697586;
-      --rule: #d8dee6;
+      --ink: #17202a;
+      --muted: #627083;
+      --rule: #d9e1ea;
       --accent: #0f766e;
-      --accent-soft: #e0f2ef;
-      --file: #42526e;
+      --accent-soft: #e3f5f1;
+      --code-bg: #0d1721;
+      --code-ink: #e7eef7;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font: 14px/1.5 "Segoe UI", Arial, sans-serif;
+      font: 14px/1.55 "Segoe UI", Arial, sans-serif;
     }
 
     main {
-      width: min(1120px, calc(100% - 32px));
+      width: min(1180px, calc(100% - 32px));
       margin: 32px auto;
     }
 
     header {
-      margin-bottom: 20px;
+      padding-bottom: 18px;
       border-bottom: 1px solid var(--rule);
-      padding-bottom: 16px;
+    }
+
+    h1,
+    h2,
+    p {
+      margin-top: 0;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: clamp(28px, 4vw, 42px);
-      line-height: 1.1;
+      margin-bottom: 8px;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.08;
       letter-spacing: 0;
     }
 
+    h2 {
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+
     .subtitle {
-      margin: 0;
+      margin-bottom: 0;
       color: var(--muted);
+    }
+
+    code,
+    pre {
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+    }
+
+    code {
+      color: #425466;
+      font-size: 12px;
     }
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin: 18px 0 24px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 22px 0;
     }
 
     .stat {
-      background: var(--panel);
+      min-width: 0;
+      padding: 14px 16px;
       border: 1px solid var(--rule);
       border-radius: 8px;
-      padding: 12px 14px;
+      background: var(--panel);
     }
 
     .stat strong {
       display: block;
-      font-size: 22px;
+      font-size: 24px;
       line-height: 1.1;
     }
 
@@ -75,105 +99,80 @@
       text-transform: uppercase;
     }
 
-    .tree-wrap {
-      background: var(--panel);
+    .panel {
+      margin-top: 18px;
+      padding: 18px;
       border: 1px solid var(--rule);
       border-radius: 8px;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    th,
+    td {
+      padding: 9px 11px;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--accent-soft);
+      color: #114f49;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    td:nth-child(2),
+    td:nth-child(3),
+    td:nth-child(4) {
+      white-space: nowrap;
+    }
+
+    .tree {
       overflow: auto;
-    }
-
-    ul.tree,
-    .tree ul {
-      list-style: none;
       margin: 0;
-      padding-left: 22px;
-    }
-
-    ul.tree {
-      padding: 16px;
-      min-width: 720px;
-    }
-
-    .node {
-      position: relative;
-      margin: 2px 0;
-    }
-
-    .node::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: -12px;
-      border-left: 1px solid var(--rule);
-    }
-
-    .node:last-child::before {
-      bottom: 14px;
-    }
-
-    .node > div,
-    summary {
-      display: grid;
-      grid-template-columns: minmax(260px, 1.1fr) minmax(95px, 0.4fr) minmax(240px, 1fr);
-      align-items: center;
-      gap: 12px;
-      min-height: 30px;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-
-    summary {
-      cursor: pointer;
-    }
-
-    summary:hover,
-    .node > div:hover {
-      background: #f0f5f4;
-    }
-
-    summary::marker {
-      color: var(--accent);
-    }
-
-    .name {
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    .directory > details > summary .name {
-      color: var(--accent);
-    }
-
-    .file .name {
-      color: var(--file);
-      font-weight: 500;
-    }
-
-    .meta {
-      color: var(--muted);
+      padding: 18px;
+      border-radius: 8px;
+      background: var(--code-bg);
+      color: var(--code-ink);
       font-size: 12px;
-      white-space: nowrap;
-    }
-
-    code {
-      color: var(--muted);
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 12px;
-      white-space: nowrap;
+      line-height: 1.55;
+      white-space: pre;
     }
 
     .note {
-      margin-top: 14px;
+      margin: 14px 0 0;
       color: var(--muted);
       font-size: 13px;
     }
 
-    @media (max-width: 760px) {
-      main { width: min(100% - 20px, 1120px); margin: 18px auto; }
-      ul.tree { min-width: 600px; padding: 12px; }
-      .node > div,
-      summary { grid-template-columns: minmax(220px, 1fr) 90px 220px; }
+    @media (max-width: 720px) {
+      main {
+        width: min(100% - 20px, 1180px);
+        margin: 18px auto;
+      }
+
+      .panel {
+        padding: 12px;
+      }
+
+      th,
+      td {
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -181,87 +180,169 @@
   <main>
     <header>
       <h1>Arborescence complete</h1>
-      <p class="subtitle">Depot: <code>C:/Users/cadet/Documents/GitHub/cs2-minneapolis-zoning</code><br>Genere le 01/05/2026 11:34.</p>
+      <p class="subtitle">
+        Depot: <code>C:/Users/cadet/Documents/GitHub/cs2-minneapolis-zoning</code><br>
+        Genere le 04/05/2026. Le dossier <code>.git</code> et ce fichier HTML sont exclus du comptage.
+      </p>
     </header>
 
     <section class="stats" aria-label="Resume de l'arborescence">
-      <div class="stat"><strong>11</strong><span>Dossiers</span></div>
-      <div class="stat"><strong>44</strong><span>Fichiers</span></div>
-      <div class="stat"><strong>270 MB</strong><span>Taille fichiers</span></div>
+      <div class="stat"><strong>18</strong><span>Dossiers</span></div>
+      <div class="stat"><strong>100</strong><span>Fichiers</span></div>
+      <div class="stat"><strong>462 MB</strong><span>Taille fichiers</span></div>
+      <div class="stat"><strong>7</strong><span>Dossiers racine</span></div>
     </section>
 
-    <section class="tree-wrap" aria-label="Arborescence du projet">
-      <ul class="tree">
-<li class="node directory"><details open><summary><span class="name">cs2-minneapolis-zoning/</span><span class="meta">8 elements</span><code>.</code></summary><ul>
-<li class="node directory"><details open><summary><span class="name">data/</span><span class="meta">2 elements</span><code>data</code></summary><ul>
-<li class="node file"><div><span class="name">.gitkeep</span><span class="meta">0 B · fichier</span><code>data/.gitkeep</code></div></li>
-<li class="node file"><div><span class="name">sample_zoning_output.js</span><span class="meta">42 KB · fichier</span><code>data/sample_zoning_output.js</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">docs/</span><span class="meta">5 elements</span><code>docs</code></summary><ul>
-<li class="node directory"><details open><summary><span class="name">screenshots/</span><span class="meta">4 elements</span><code>docs/screenshots</code></summary><ul>
-<li class="node file"><div><span class="name">.gitkeep</span><span class="meta">0 B · fichier</span><code>docs/screenshots/.gitkeep</code></div></li>
-<li class="node file"><div><span class="name">preview_downtown.png</span><span class="meta">849 KB · fichier</span><code>docs/screenshots/preview_downtown.png</code></div></li>
-<li class="node file"><div><span class="name">preview_full.png</span><span class="meta">2.4 MB · fichier</span><code>docs/screenshots/preview_full.png</code></div></li>
-<li class="node file"><div><span class="name">preview_legend.png</span><span class="meta">29 KB · fichier</span><code>docs/screenshots/preview_legend.png</code></div></li>
-</ul></details></li>
-<li class="node file"><div><span class="name">adapting-to-other-cities.md</span><span class="meta">4.1 KB · fichier</span><code>docs/adapting-to-other-cities.md</code></div></li>
-<li class="node file"><div><span class="name">bbox-mcp-server.md</span><span class="meta">2.5 KB · fichier</span><code>docs/bbox-mcp-server.md</code></div></li>
-<li class="node file"><div><span class="name">cs2-zone-reference.md</span><span class="meta">14 KB · fichier</span><code>docs/cs2-zone-reference.md</code></div></li>
-<li class="node file"><div><span class="name">github-publishing.md</span><span class="meta">4.2 KB · fichier</span><code>docs/github-publishing.md</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">src/</span><span class="meta">8 elements</span><code>src</code></summary><ul>
-<li class="node directory"><details open><summary><span class="name">__pycache__/</span><span class="meta">8 elements</span><code>src/__pycache__</code></summary><ul>
-<li class="node file"><div><span class="name">classifiers.cpython-312.pyc</span><span class="meta">6.3 KB · fichier</span><code>src/__pycache__/classifiers.cpython-312.pyc</code></div></li>
-<li class="node file"><div><span class="name">classifiers.cpython-314.pyc</span><span class="meta">8.0 KB · fichier</span><code>src/__pycache__/classifiers.cpython-314.pyc</code></div></li>
-<li class="node file"><div><span class="name">cs2_zones.cpython-312.pyc</span><span class="meta">3.3 KB · fichier</span><code>src/__pycache__/cs2_zones.cpython-312.pyc</code></div></li>
-<li class="node file"><div><span class="name">cs2_zones.cpython-314.pyc</span><span class="meta">3.6 KB · fichier</span><code>src/__pycache__/cs2_zones.cpython-314.pyc</code></div></li>
-<li class="node file"><div><span class="name">extract_zoning.cpython-312.pyc</span><span class="meta">14 KB · fichier</span><code>src/__pycache__/extract_zoning.cpython-312.pyc</code></div></li>
-<li class="node file"><div><span class="name">extract_zoning.cpython-314.pyc</span><span class="meta">17 KB · fichier</span><code>src/__pycache__/extract_zoning.cpython-314.pyc</code></div></li>
-<li class="node file"><div><span class="name">overpass_client.cpython-312.pyc</span><span class="meta">3.2 KB · fichier</span><code>src/__pycache__/overpass_client.cpython-312.pyc</code></div></li>
-<li class="node file"><div><span class="name">overpass_client.cpython-314.pyc</span><span class="meta">4.3 KB · fichier</span><code>src/__pycache__/overpass_client.cpython-314.pyc</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">legacy/</span><span class="meta">1 element</span><code>src/legacy</code></summary><ul>
-<li class="node file"><div><span class="name">download_zoning_legacy.js</span><span class="meta">12 KB · fichier</span><code>src/legacy/download_zoning_legacy.js</code></div></li>
-</ul></details></li>
-<li class="node file"><div><span class="name">classifiers.py</span><span class="meta">6.2 KB · fichier</span><code>src/classifiers.py</code></div></li>
-<li class="node file"><div><span class="name">cs2_zones.py</span><span class="meta">3.1 KB · fichier</span><code>src/cs2_zones.py</code></div></li>
-<li class="node file"><div><span class="name">extract_zoning.py</span><span class="meta">11 KB · fichier</span><code>src/extract_zoning.py</code></div></li>
-<li class="node file"><div><span class="name">overpass_client.py</span><span class="meta">3.0 KB · fichier</span><code>src/overpass_client.py</code></div></li>
-<li class="node file"><div><span class="name">pyproject.toml</span><span class="meta">445 B · fichier</span><code>src/pyproject.toml</code></div></li>
-<li class="node file"><div><span class="name">uv.lock</span><span class="meta">32 KB · fichier</span><code>src/uv.lock</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">visualizer/</span><span class="meta">5 elements</span><code>visualizer</code></summary><ul>
-<li class="node directory"><details open><summary><span class="name">data/</span><span class="meta">1 element</span><code>visualizer/data</code></summary><ul>
-<li class="node file"><div><span class="name">world_capitals.js</span><span class="meta">20 KB · fichier</span><code>visualizer/data/world_capitals.js</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">js/</span><span class="meta">10 elements</span><code>visualizer/js</code></summary><ul>
-<li class="node file"><div><span class="name">app.js</span><span class="meta">2.0 KB · fichier</span><code>visualizer/js/app.js</code></div></li>
-<li class="node file"><div><span class="name">config.js</span><span class="meta">8.5 KB · fichier</span><code>visualizer/js/config.js</code></div></li>
-<li class="node file"><div><span class="name">cs2-map-helper.js</span><span class="meta">7.1 KB · fichier</span><code>visualizer/js/cs2-map-helper.js</code></div></li>
-<li class="node file"><div><span class="name">cs2-overlay-controller.js</span><span class="meta">6.8 KB · fichier</span><code>visualizer/js/cs2-overlay-controller.js</code></div></li>
-<li class="node file"><div><span class="name">data-adapter.js</span><span class="meta">4.6 KB · fichier</span><code>visualizer/js/data-adapter.js</code></div></li>
-<li class="node file"><div><span class="name">location-navigator.js</span><span class="meta">7.7 KB · fichier</span><code>visualizer/js/location-navigator.js</code></div></li>
-<li class="node file"><div><span class="name">map-controller.js</span><span class="meta">5.0 KB · fichier</span><code>visualizer/js/map-controller.js</code></div></li>
-<li class="node file"><div><span class="name">panel-controller.js</span><span class="meta">6.5 KB · fichier</span><code>visualizer/js/panel-controller.js</code></div></li>
-<li class="node file"><div><span class="name">safe-html.js</span><span class="meta">738 B · fichier</span><code>visualizer/js/safe-html.js</code></div></li>
-<li class="node file"><div><span class="name">stats.js</span><span class="meta">1.7 KB · fichier</span><code>visualizer/js/stats.js</code></div></li>
-</ul></details></li>
-<li class="node directory"><details open><summary><span class="name">styles/</span><span class="meta">2 elements</span><code>visualizer/styles</code></summary><ul>
-<li class="node file"><div><span class="name">app.css</span><span class="meta">19 KB · fichier</span><code>visualizer/styles/app.css</code></div></li>
-<li class="node file"><div><span class="name">tokens.css</span><span class="meta">1.2 KB · fichier</span><code>visualizer/styles/tokens.css</code></div></li>
-</ul></details></li>
-<li class="node file"><div><span class="name">index.html</span><span class="meta">8.8 KB · fichier</span><code>visualizer/index.html</code></div></li>
-<li class="node file"><div><span class="name">zoning_data.js</span><span class="meta">266 MB · fichier</span><code>visualizer/zoning_data.js</code></div></li>
-</ul></details></li>
-<li class="node file"><div><span class="name">.gitignore</span><span class="meta">807 B · fichier</span><code>.gitignore</code></div></li>
-<li class="node file"><div><span class="name">LICENSE</span><span class="meta">1.2 KB · fichier</span><code>LICENSE</code></div></li>
-<li class="node file"><div><span class="name">METHODOLOGY.md</span><span class="meta">8.7 KB · fichier</span><code>METHODOLOGY.md</code></div></li>
-<li class="node file"><div><span class="name">README.md</span><span class="meta">8.2 KB · fichier</span><code>README.md</code></div></li>
-</ul></details></li>
-      </ul>
+    <section class="panel" aria-labelledby="top-level-title">
+      <h2 id="top-level-title">Vue par dossier racine</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Chemin</th>
+            <th>Fichiers</th>
+            <th>Dossiers</th>
+            <th>Taille</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>analysis_zoning_data/</code></td><td>34</td><td>2</td><td>217 MB</td></tr>
+          <tr><td><code>data/</code></td><td>2</td><td>0</td><td>42 KB</td></tr>
+          <tr><td><code>docs/</code></td><td>8</td><td>1</td><td>3.3 MB</td></tr>
+          <tr><td><code>exports/</code></td><td>15</td><td>3</td><td>213 MB</td></tr>
+          <tr><td><code>src/</code></td><td>14</td><td>2</td><td>162 KB</td></tr>
+          <tr><td><code>tools/</code></td><td>5</td><td>0</td><td>29 KB</td></tr>
+          <tr><td><code>visualizer/</code></td><td>18</td><td>3</td><td>29 MB</td></tr>
+          <tr><td><code>.gitignore</code></td><td>1</td><td>0</td><td>819 B</td></tr>
+          <tr><td><code>LICENSE</code></td><td>1</td><td>0</td><td>1.2 KB</td></tr>
+          <tr><td><code>METHODOLOGY.md</code></td><td>1</td><td>0</td><td>8.7 KB</td></tr>
+          <tr><td><code>README.md</code></td><td>1</td><td>0</td><td>10 KB</td></tr>
+        </tbody>
+      </table>
     </section>
 
-    <p class="note">Note: le dossier interne <code>.git</code> et ce fichier HTML genere sont exclus de la liste.</p>
+    <section class="panel" aria-labelledby="tree-title">
+      <h2 id="tree-title">Arborescence detaillee</h2>
+      <pre class="tree">cs2-minneapolis-zoning/
+|-- analysis_zoning_data/ (34 fichiers, 2 dossiers, 217 MB)
+|   |-- clipped/ (16 fichiers, 0 dossiers, 116 MB)
+|   |   |-- all_features.geojson (33 MB)
+|   |   |-- bbox_manifest.json (484 B)
+|   |   |-- clip_report.csv (2.7 KB)
+|   |   |-- commercial.geojson (426 KB)
+|   |   |-- industrial.geojson (104 KB)
+|   |   |-- mixed.geojson (42 B)
+|   |   |-- office.geojson (129 KB)
+|   |   |-- parking.geojson (1.2 MB)
+|   |   |-- paths.geojson (9.0 MB)
+|   |   |-- residential.geojson (553 KB)
+|   |   |-- retail.geojson (140 KB)
+|   |   |-- roads_driveable_clipped.geojson (11 MB)
+|   |   |-- roads_major_clipped.geojson (5.8 MB)
+|   |   |-- roads.geojson (22 MB)
+|   |   |-- transport_lines.geojson (31 MB)
+|   |   `-- zoning_polygons.geojson (2.6 MB)
+|   |-- exports/ (12 fichiers, 0 dossiers, 100 MB)
+|   |   |-- all_features.geojson (33 MB)
+|   |   |-- commercial.geojson (432 KB)
+|   |   |-- industrial.geojson (104 KB)
+|   |   |-- mixed.geojson (42 B)
+|   |   |-- office.geojson (130 KB)
+|   |   |-- parking.geojson (1.3 MB)
+|   |   |-- paths.geojson (9.1 MB)
+|   |   |-- residential.geojson (575 KB)
+|   |   |-- retail.geojson (140 KB)
+|   |   |-- roads.geojson (22 MB)
+|   |   |-- transport_lines.geojson (31 MB)
+|   |   `-- zoning_polygons.geojson (2.6 MB)
+|   |-- datasets.csv (1.1 KB)
+|   |-- groups.csv (97 B)
+|   |-- interesting_values.csv (29 B)
+|   |-- property_keys.csv (139 B)
+|   |-- property_values.csv (6.3 KB)
+|   `-- summary.txt (1.3 KB)
+|-- data/ (2 fichiers, 0 dossiers, 42 KB)
+|   |-- .gitkeep (0 B)
+|   `-- sample_zoning_output.js (42 KB)
+|-- docs/ (8 fichiers, 1 dossiers, 3.3 MB)
+|   |-- screenshots/ (4 fichiers, 0 dossiers, 3.3 MB)
+|   |   |-- .gitkeep (0 B)
+|   |   |-- preview_downtown.png (849 KB)
+|   |   |-- preview_full.png (2.4 MB)
+|   |   `-- preview_legend.png (29 KB)
+|   |-- adapting-to-other-cities.md (4.2 KB)
+|   |-- bbox-mcp-server.md (2.6 KB)
+|   |-- cs2-zone-reference.md (14 KB)
+|   `-- github-publishing.md (4.3 KB)
+|-- exports/ (15 fichiers, 3 dossiers, 213 MB)
+|   `-- zone-cs2/ (15 fichiers, 2 dossiers, 213 MB)
+|       |-- geojson/ (13 fichiers, 0 dossiers, 213 MB)
+|       |   |-- all_features.geojson (74 MB)
+|       |   |-- commercial.geojson (1.2 MB)
+|       |   |-- industrial.geojson (277 KB)
+|       |   |-- mixed.geojson (54 B)
+|       |   |-- office.geojson (356 KB)
+|       |   |-- parking.geojson (3.6 MB)
+|       |   |-- paths.geojson (21 MB)
+|       |   |-- residential.geojson (1.6 MB)
+|       |   |-- retail.geojson (395 KB)
+|       |   |-- roads_driveable_clipped.geojson (45 MB)
+|       |   |-- roads_major_clipped.geojson (12 MB)
+|       |   |-- roads.geojson (45 MB)
+|       |   `-- zoning_polygons.geojson (7.4 MB)
+|       `-- reports/ (2 fichiers, 0 dossiers, 4.7 KB)
+|           |-- extraction_report.json (2.7 KB)
+|           `-- layer_index.json (2.0 KB)
+|-- src/ (14 fichiers, 2 dossiers, 162 KB)
+|   |-- __pycache__/ (3 fichiers, 0 dossiers, 16 KB)
+|   |   |-- classifiers.cpython-314.pyc (8.0 KB)
+|   |   |-- cs2_zones.cpython-314.pyc (3.6 KB)
+|   |   `-- overpass_client.cpython-314.pyc (4.4 KB)
+|   |-- legacy/ (1 fichiers, 0 dossiers, 12 KB)
+|   |   `-- download_zoning_legacy.js (12 KB)
+|   |-- classifiers.py (6.4 KB)
+|   |-- cs2_zones.py (3.1 KB)
+|   |-- extract_zoning.py (20 KB)
+|   |-- extract_zoning.py.before-args-fix (19 KB)
+|   |-- extract_zoning.py.before-official-exports-pack (20 KB)
+|   |-- extract_zoning.py.before-official-pack (20 KB)
+|   |-- extract_zoning.py.before-split-layers (12 KB)
+|   |-- overpass_client.py (3.1 KB)
+|   |-- pyproject.toml (448 B)
+|   `-- uv.lock (32 KB)
+|-- tools/ (5 fichiers, 0 dossiers, 29 KB)
+|   |-- analyze_zoning_data_v2.py (8.9 KB)
+|   |-- analyze_zoning_data.py (11 KB)
+|   |-- clip_to_heightmap_bbox.py (5.7 KB)
+|   |-- diagnose_zoning_js.py (1.2 KB)
+|   `-- export_road_subsets.py (2.3 KB)
+|-- visualizer/ (18 fichiers, 3 dossiers, 29 MB)
+|   |-- data/ (1 fichiers, 0 dossiers, 20 KB)
+|   |   `-- world_capitals.js (20 KB)
+|   |-- js/ (12 fichiers, 0 dossiers, 74 KB)
+|   |   |-- app.js (2.6 KB)
+|   |   |-- config.js (8.7 KB)
+|   |   |-- cs2-map-helper.js (13 KB)
+|   |   |-- cs2-map-helper.js.before-manifest-fix (9.7 KB)
+|   |   |-- cs2-overlay-controller.js (7.1 KB)
+|   |   |-- data-adapter.js (5.0 KB)
+|   |   |-- location-navigator.js (8.0 KB)
+|   |   |-- map-controller.js (5.2 KB)
+|   |   |-- pack-loader.js (4.6 KB)
+|   |   |-- panel-controller.js (6.8 KB)
+|   |   |-- safe-html.js (771 B)
+|   |   `-- stats.js (1.7 KB)
+|   |-- styles/ (2 fichiers, 0 dossiers, 21 KB)
+|   |   |-- app.css (19 KB)
+|   |   `-- tokens.css (1.3 KB)
+|   |-- index.html (10.0 KB)
+|   |-- index.html.before-manifest-fix (9.0 KB)
+|   `-- zoning_data.js (29 MB)
+|-- .gitignore (819 B)
+|-- LICENSE (1.2 KB)
+|-- METHODOLOGY.md (8.7 KB)
+`-- README.md (10 KB)</pre>
+      <p class="note">Cette vue inclut les fichiers generes et ignores visibles sur disque, notamment <code>visualizer/zoning_data.js</code> et <code>src/__pycache__/</code>. Elle n'inclut pas <code>.git</code> ni <code>arborescence.html</code>.</p>
+    </section>
   </main>
 </body>
 </html>
