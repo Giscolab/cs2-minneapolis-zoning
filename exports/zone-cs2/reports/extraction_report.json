@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-03T20:10:35.617926+00:00",
+  "generatedAt": "2026-05-04T18:57:30.163231+00:00",
   "city": "Zone CS2",
   "bbox": "33.581040,-117.870958,33.752752,-117.664642",
   "bboxOrder": "south,west,north,east",
   "outputDirectory": "exports\\zone-cs2",
   "summary": {
-    "total": 76425,
+    "total": 77349,
     "skippedPolygonsWithoutGeometry": 0,
     "skippedRoadsWithoutGeometry": 0,
     "skippedPathsWithoutGeometry": 0,
@@ -17,8 +17,10 @@
       "parking": 2070,
       "office": 293,
       "mixed": 0,
-      "roads": 53449,
-      "paths": 18630
+      "roads": 53453,
+      "paths": 18630,
+      "water_lines": 737,
+      "water_areas": 183
     }
   },
   "layers": [
@@ -74,19 +76,19 @@
       "name": "roads",
       "file": "geojson/roads.geojson",
       "geometryType": "LineString",
-      "count": 53449
+      "count": 53453
     },
     {
       "name": "roads_major_clipped",
       "file": "geojson/roads_major_clipped.geojson",
       "geometryType": "LineString",
-      "count": 14187
+      "count": 14188
     },
     {
       "name": "roads_driveable_clipped",
       "file": "geojson/roads_driveable_clipped.geojson",
       "geometryType": "LineString",
-      "count": 53449
+      "count": 53453
     },
     {
       "name": "paths",
@@ -95,14 +97,26 @@
       "count": 18630
     },
     {
+      "name": "water_lines_clipped",
+      "file": "geojson/water_lines_clipped.geojson",
+      "geometryType": "LineString",
+      "count": 737
+    },
+    {
+      "name": "water_areas_clipped",
+      "file": "geojson/water_areas_clipped.geojson",
+      "geometryType": "Polygon",
+      "count": 183
+    },
+    {
       "name": "all_features",
       "file": "geojson/all_features.geojson",
       "geometryType": "Mixed",
-      "count": 76425
+      "count": 77349
     }
   ],
   "notes": [
     "Les coordonnées GeoJSON sont exportées en ordre standard [longitude, latitude].",
-    "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson ne sont pas encore produits par extract_zoning.py."
+    "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson sont produits depuis les tags OSM waterway/natural/water/landuse."
   ]
 }

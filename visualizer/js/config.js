@@ -22,7 +22,9 @@
       { key: "office", globalName: "DATA_OFFICE", label: "Bureaux" },
       { key: "mixed", globalName: "DATA_MIXED", label: "Usage mixte" },
       { key: "roads", globalName: "DATA_ROADS", label: "Routes" },
-      { key: "paths", globalName: "DATA_PATHS", label: "Chemins/piéton" }
+      { key: "paths", globalName: "DATA_PATHS", label: "Chemins/piéton" },
+      { key: "water_lines_clipped", globalName: "DATA_WATER_LINES", label: "Eau — lignes" },
+      { key: "water_areas_clipped", globalName: "DATA_WATER_AREAS", label: "Eau — surfaces" }
     ],
     layers: [
       {
@@ -277,7 +279,33 @@
         lineWeight: 1,
         cs2: "Chemins piétons",
         realWorld: "Chemin ou rue piétonne OSM"
+      },
+      {
+        key: "water_lines",
+        source: "water_lines_clipped",
+        category: "water",
+        geometry: "line",
+        label: "Eau — lignes",
+        description: "Rivières, canaux, drains, fossés et cours d’eau linéaires",
+        color: "#38bdf8",
+        stroke: "#38bdf8",
+        lineWeight: 3,
+        cs2: "Eau / cours d’eau",
+        realWorld: "Cours d’eau linéaire OSM"
+      },
+      {
+        key: "water_areas",
+        source: "water_areas_clipped",
+        category: "water",
+        geometry: "polygon",
+        label: "Eau — surfaces",
+        description: "Lacs, bassins, réservoirs et surfaces natural=water",
+        color: "#0ea5e9",
+        stroke: "#0284c7",
+        cs2: "Eau / surface",
+        realWorld: "Surface d’eau OSM"
       }
+
     ]
   };
 })(window.CS2Zoning = window.CS2Zoning || {});

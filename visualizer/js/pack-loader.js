@@ -12,7 +12,9 @@
     office: true,
     mixed: true,
     roads: true,
-    paths: true
+    paths: true,
+    water_lines_clipped: true,
+    water_areas_clipped: true
   };
 
   function fetchJSON(path) {

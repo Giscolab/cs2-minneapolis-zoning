@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T20:10:35.617926+00:00",
+  "generatedAt": "2026-05-04T18:57:30.163231+00:00",
   "city": "Zone CS2",
   "bbox": "33.581040,-117.870958,33.752752,-117.664642",
   "bboxOrder": "south,west,north,east",
@@ -56,19 +56,19 @@
       "name": "roads",
       "file": "geojson/roads.geojson",
       "geometryType": "LineString",
-      "count": 53449
+      "count": 53453
     },
     {
       "name": "roads_major_clipped",
       "file": "geojson/roads_major_clipped.geojson",
       "geometryType": "LineString",
-      "count": 14187
+      "count": 14188
     },
     {
       "name": "roads_driveable_clipped",
       "file": "geojson/roads_driveable_clipped.geojson",
       "geometryType": "LineString",
-      "count": 53449
+      "count": 53453
     },
     {
       "name": "paths",
@@ -77,10 +77,22 @@
       "count": 18630
     },
     {
+      "name": "water_lines_clipped",
+      "file": "geojson/water_lines_clipped.geojson",
+      "geometryType": "LineString",
+      "count": 737
+    },
+    {
+      "name": "water_areas_clipped",
+      "file": "geojson/water_areas_clipped.geojson",
+      "geometryType": "Polygon",
+      "count": 183
+    },
+    {
       "name": "all_features",
       "file": "geojson/all_features.geojson",
       "geometryType": "Mixed",
-      "count": 76425
+      "count": 77349
     }
   ]
 }

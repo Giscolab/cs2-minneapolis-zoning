@@ -51,6 +51,74 @@ PATH_TAG_KEYS = (
 )
 
 
+
+
+WATER_TAG_KEYS = (
+    "waterway",
+    "natural",
+    "water",
+    "landuse",
+    "name",
+    "intermittent",
+    "seasonal",
+    "tunnel",
+    "bridge",
+)
+
+
+def build_water_lines_query(bbox: str) -> str:
+    return f"""
+[out:json][timeout:180];
+(
+  way["waterway"~"^(river|stream|canal|drain|ditch)$"]({bbox});
+);
+out tags geom;
+"""
+
+
+def build_water_areas_query(bbox: str) -> str:
+    return f"""
+[out:json][timeout:180];
+(
+  way["natural"="water"]({bbox});
+  relation["natural"="water"]({bbox});
+  way["water"]({bbox});
+  relation["water"]({bbox});
+  way["landuse"~"^(reservoir|basin)$"]({bbox});
+  relation["landuse"~"^(reservoir|basin)$"]({bbox});
+  way["waterway"="riverbank"]({bbox});
+  relation["waterway"="riverbank"]({bbox});
+);
+out tags geom;
+"""
+
+
+def extract_water_tags(tags: dict) -> dict:
+    return {
+        key: tags[key]
+        for key in WATER_TAG_KEYS
+        if tags.get(key) is not None and str(tags.get(key)).strip() != ""
+    }
+
+
+def classify_water_area(tags: dict) -> str:
+    if tags.get("water"):
+        return str(tags.get("water"))
+    if tags.get("natural") == "water":
+        return "water"
+    if tags.get("landuse"):
+        return str(tags.get("landuse"))
+    if tags.get("waterway"):
+        return str(tags.get("waterway"))
+    return "water"
+
+
+def classify_water_line(tags: dict) -> str:
+    if tags.get("waterway"):
+        return str(tags.get("waterway"))
+    return "waterway"
+
+
 def coords_from_way(element: dict) -> list | None:
     geom = element.get("geometry", [])
     if len(geom) < 3:
@@ -354,6 +422,22 @@ def write_split_layers_pack(
     path_features = build_features(output.get("paths", []), "line")
     write_layer("paths.geojson", path_features, "LineString", base_layer=True)
 
+    water_line_features = build_features(output.get("water_lines", []), "line")
+    write_layer(
+        "water_lines_clipped.geojson",
+        water_line_features,
+        "LineString",
+        base_layer=True,
+    )
+
+    water_area_features = build_features(output.get("water_areas", []), "polygon")
+    write_layer(
+        "water_areas_clipped.geojson",
+        water_area_features,
+        "Polygon",
+        base_layer=True,
+    )
+
     write_geojson(geojson_dir / "all_features.geojson", base_features)
 
     layer_index["layers"].append({
@@ -380,7 +464,7 @@ def write_split_layers_pack(
         "layers": layer_index["layers"],
         "notes": [
             "Les coordonnées GeoJSON sont exportées en ordre standard [longitude, latitude].",
-            "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson ne sont pas encore produits par extract_zoning.py.",
+            "Les fichiers water_lines_clipped.geojson et water_areas_clipped.geojson sont produits depuis les tags OSM waterway/natural/water/landuse.",
         ],
     }
 
@@ -465,14 +549,26 @@ def main():
     raw["paths"] = paths_data.get("elements", [])
     print(f"      paths: {len(raw['paths'])} éléments")
 
+    water_lines_data = query_with_retry(build_water_lines_query(bbox), "water_lines")
+    raw["water_lines"] = water_lines_data.get("elements", [])
+    print(f"      water_lines: {len(raw['water_lines'])} éléments")
+
+    water_areas_data = query_with_retry(build_water_areas_query(bbox), "water_areas")
+    raw["water_areas"] = water_areas_data.get("elements", [])
+    print(f"      water_areas: {len(raw['water_areas'])} éléments")
+
     print("\n[4/4] Classification des zones, routes et chemins...")
 
     output: dict[str, list] = {cat: [] for cat in zone_categories}
     output["roads"] = []
     output["paths"] = []
+    output["water_lines"] = []
+    output["water_areas"] = []
     skipped = 0
     skipped_roads = 0
     skipped_paths = 0
+    skipped_water_lines = 0
+    skipped_water_areas = 0
     commercial_ids: set[int] = set()
 
     for el in raw["commercial"]:
@@ -642,6 +738,48 @@ def main():
             "tags": extract_path_tags(tags),
         })
 
+    for el in raw["water_lines"]:
+        tags = el.get("tags") or {}
+        coords = extract_line_coords(el)
+
+        if not coords:
+            skipped_water_lines += 1
+            continue
+
+        subtype = classify_water_line(tags)
+
+        output["water_lines"].append({
+            "id": el.get("id"),
+            "name": tags.get("name") or "Néant",
+            "category": "Water",
+            "subcategory": subtype,
+            "sourceTag": tags.get("waterway") or "",
+            "confidence": 1.0,
+            "coords": coords,
+            "tags": extract_water_tags(tags),
+        })
+
+    for el in raw["water_areas"]:
+        tags = el.get("tags") or {}
+        coords = extract_coords(el)
+
+        if not coords:
+            skipped_water_areas += 1
+            continue
+
+        subtype = classify_water_area(tags)
+
+        output["water_areas"].append({
+            "id": el.get("id"),
+            "name": tags.get("name") or "Néant",
+            "category": "Water",
+            "subcategory": subtype,
+            "sourceTag": tags.get("water") or tags.get("natural") or tags.get("landuse") or tags.get("waterway") or "",
+            "confidence": 1.0,
+            "coords": coords,
+            "tags": extract_water_tags(tags),
+        })
+
     total = sum(len(v) for v in output.values())
     res = output["residential"]
     com = output["commercial"]
@@ -662,9 +800,13 @@ def main():
 
     print(f"  Routes récupérées          : {len(roads)}")
     print(f"  Chemins/piéton récupérés   : {len(paths)}")
+    print(f"  Lignes d’eau récupérées    : {len(output['water_lines'])}")
+    print(f"  Zones d’eau récupérées     : {len(output['water_areas'])}")
     print(f"  Ignorés sans géométrie     : {skipped}")
     print(f"  Routes ignorées sans géom. : {skipped_roads}")
     print(f"  Chemins ignorés sans géom. : {skipped_paths}")
+    print(f"  Lignes eau sans géom.      : {skipped_water_lines}")
+    print(f"  Zones eau sans géom.       : {skipped_water_areas}")
     print(f"  TOTAL                      : {total}")
 
     ts = datetime.now(timezone.utc).isoformat()
@@ -676,7 +818,7 @@ def main():
         "skippedPathsWithoutGeometry": skipped_paths,
         "counts": {
             cat: len(output.get(cat, []))
-            for cat in zone_categories + ["roads", "paths"]
+            for cat in zone_categories + ["roads", "paths", "water_lines", "water_areas"]
         },
     }
 
@@ -700,7 +842,7 @@ def main():
             "",
         ]
 
-        for cat in zone_categories + ["roads", "paths"]:
+        for cat in zone_categories + ["roads", "paths", "water_lines", "water_areas"]:
             var = f"DATA_{cat.upper()}"
             lines.append(f"const {var} = {json.dumps(output[cat], ensure_ascii=False)};")
 
