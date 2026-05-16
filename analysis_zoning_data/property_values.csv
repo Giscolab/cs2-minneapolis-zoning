@@ -1,0 +1,255 @@
+﻿key;value;count
+category;Roads;53354
+category;Paths;18607
+confidence;direct;71961
+cs2;Parking de surface;1946
+cs2;Commercial basse densité;791
+cs2;Résidentiel basse densité;585
+cs2;Bureaux / administration;287
+cs2;Commerce de détail;252
+cs2;Industrie;245
+cs2;Parking en ouvrage;127
+cs2;Résidentiel haute densité;111
+cs2;Résidentiel moyenne densité;2
+name;Néant;48355
+name;;3432
+name;Alton Parkway;362
+name;Irvine Boulevard;338
+name;Jamboree Road;288
+name;Barranca Parkway;231
+name;Culver Drive;217
+name;San Diego Freeway;200
+name;Irvine Center Drive;196
+name;El Toro Road;194
+name;MacArthur Boulevard;190
+name;Lake Forest Drive;186
+name;Red Hill Avenue;182
+name;Walnut Avenue;179
+name;Trabuco Road;168
+name;Portola Parkway;161
+name;Santa Ana Freeway;160
+name;Bake Parkway;160
+name;Jeffrey Road;158
+name;Laguna Canyon Road;157
+name;Harvard Avenue;151
+name;Tustin Ranch Road;149
+name;Main Street;147
+name;Michelson Drive;142
+name;Sand Canyon Avenue;139
+name;Muirlands Boulevard;133
+name;Campus Drive;130
+name;Jeronimo Road;126
+name;Newport Avenue;125
+name;Bryan Avenue;124
+name;East 1st Street;123
+name;Alicia Parkway;118
+name;Yale Avenue;110
+name;Paseo de Valencia;108
+name;South Main Street;106
+name;Los Alisos Boulevard;104
+name;Moulton Parkway;103
+name;Rockfield Boulevard;91
+name;University Drive;91
+name;El Camino Real;89
+name;Von Karman Avenue;89
+name;Bonita Canyon Drive;81
+name;East Warner Avenue;78
+name;Ridge Route Drive;77
+name;West Yale Loop;77
+name;Costa Mesa Freeway;75
+name;Ridge Valley;74
+name;Edinger Avenue;68
+name;East Edinger Avenue;66
+name;Paseo Westpark;66
+name;San Joaquin Hills Transportation Corridor;64
+name;East Dyer Road;63
+name;La Paz Road;62
+name;East Yale Loop;61
+name;California Avenue;60
+name;Warner Avenue;60
+name;Technology Drive;60
+name;McFadden Avenue;57
+name;South Grand Avenue;57
+name;Park Avenue;57
+name;Newport Coast Drive;56
+name;Eastern Transportation Corridor;54
+name;Avenida De La Carlota;53
+name;Roosevelt;52
+name;San Joaquin Hills Road;52
+name;Marine Way;51
+name;East 4th Street;45
+name;Valencia Avenue;44
+name;Foothill Transportation Corridor;44
+name;East Santa Ana Boulevard;44
+name;Dimension Drive;43
+name;Birch Street;43
+name;Bison Avenue;42
+name;East Chestnut Avenue;41
+name;West 1st Street;41
+name;Cadence;40
+name;Grand Avenue;39
+name;Aliso Creek Road;38
+name;Moffett Drive;38
+name;Calle Aragon;37
+name;San Miguel Drive;37
+name;Spring Meadow;36
+name;Pacific Coast Highway;36
+name;Myford Road;35
+name;Toledo Way;35
+name;Pacifica;34
+name;Towne Centre Drive;34
+name;Great Park Boulevard;34
+name;Cabrillo Park Drive;33
+name;Avenida Sevilla;32
+name;East Peltason Drive;32
+name;Glenwood Drive;32
+name;McGaw Avenue;32
+name;Laguna Freeway;31
+name;South Lyon Street;30
+name;Rancho Parkway South;30
+name;Turtle Crest Drive;30
+name;Deerfield Avenue;29
+name;Carlson Avenue;29
+name;Spectrum Center Drive;28
+name;Research Drive;28
+name;Aliso Viejo Parkway;28
+name;Ridge Park Road;28
+name;Entertainment Way;28
+name;Chrisanta Drive;27
+name;Armstrong Avenue;26
+name;Auto Mall Drive;25
+name;Via Puerta;25
+name;MacArthur Place;25
+name;Turtle Rock Drive;25
+name;Oakglen;25
+name;Auto Center Drive;24
+name;Ford Road;24
+name;South Standard Avenue;24
+name;East Main Street;24
+name;Groveland;24
+name;Anacapa;24
+name;North Main Street;24
+name;Calle Sonora;23
+name;La Colina Drive;23
+name;Regal;23
+name;Discovery;23
+name;Settlers;23
+name;Quail Hill Parkway;23
+name;Gitano;23
+name;Catalina;23
+name;Monarch;23
+name;Westwood;23
+name;Meadowood;22
+name;Airport Way;22
+name;Gateway;22
+name;Turtle Ridge Drive;22
+name;Cabot Road;22
+name;Anteater Drive;22
+name;Pioneer Road;21
+name;Commercentre Drive;21
+name;Northwood;21
+name;Vaquero Way;21
+name;Valley Oak;21
+name;Portola Springs;21
+name;Summit Park Drive;21
+name;Parkwood;20
+name;West Peltason Drive;20
+name;East Saint Andrew Place;20
+name;Santa Maria Avenue;20
+name;Knollcrest;20
+name;Tulip;20
+name;North Santiago Street;19
+name;South Cypress Avenue;19
+name;Pereira Drive;19
+name;Ridgeline Drive;19
+name;Bahia Blanca West;19
+name;Dupont Drive;19
+name;West Main Street;19
+name;Valley Oak Drive;19
+name;Lawnwood;19
+name;Victory Road;19
+name;Indian Hill Lane;18
+name;North Sycamore Street;18
+name;Civic Center Drive East;18
+name;Sycamore Avenue;18
+name;Townsend;18
+name;Furrow;18
+name;Shadow Oaks;18
+name;Merit;18
+name;Fivepoint;18
+name;Robinson Drive;17
+name;The Mall;17
+name;Kaiser Avenue;17
+name;Avenida Majorca;17
+name;North Bush Street;17
+name;Browning Avenue;17
+name;Peachwood;17
+name;Orchard Hills Drive;17
+name;Vintage;17
+name;Towngate;17
+name;Lynx;17
+name;Eastwood;16
+name;Loggia;16
+name;Palatine;16
+name;Spyglass Hill Road;16
+name;Michelle Drive;16
+name;Enterprise;16
+name;Laguna Hills Drive;16
+name;Corsair;16
+name;Shady Canyon;16
+name;Marguerite Avenue;16
+name;Ovation;16
+name;Progress;16
+name;Tustin Ranch Plaza;15
+name;Spectrum;15
+name;Chambord;15
+name;North Tustin Avenue;15
+name;Lakeview;15
+name;Avenida Sosiega;15
+name;Serrano Road;15
+name;Enterprise Drive;15
+name;Hallmark;15
+name;Encore;15
+name;Departures;15
+sourceTag;highway=service;28311
+sourceTag;highway=footway;17031
+sourceTag;highway=residential;10063
+sourceTag;highway=tertiary;3990
+sourceTag;highway=secondary;3934
+sourceTag;highway=primary;3492
+sourceTag;highway=motorway_link;972
+sourceTag;highway=path;896
+sourceTag;highway=unclassified;693
+sourceTag;highway=motorway;609
+sourceTag;highway=steps;542
+sourceTag;bridge=yes;527
+sourceTag;highway=primary_link;233
+sourceTag;highway=pedestrian;138
+sourceTag;highway=secondary_link;116
+sourceTag;highway=trunk;108
+sourceTag;tunnel=building_passage;106
+sourceTag;highway=tertiary_link;85
+sourceTag;junction=roundabout;81
+sourceTag;tunnel=yes;15
+sourceTag;highway=living_street;10
+sourceTag;highway=trunk_link;7
+sourceTag;bridge=viaduct;2
+subcategory;Service Road;28311
+subcategory;Road;22182
+subcategory;Footway;17031
+subcategory;Highway Ramp;1413
+subcategory;Path;896
+subcategory;Highway;717
+subcategory;Steps;542
+subcategory;Bridge;529
+subcategory;Pedestrian Street;138
+subcategory;Tunnel;121
+subcategory;Roundabout;81
+zone;surface;1946
+zone;low;1376
+zone;office;287
+zone;retail;252
+zone;industrial;245
+zone;ramp;127
+zone;high;111
+zone;medium;2

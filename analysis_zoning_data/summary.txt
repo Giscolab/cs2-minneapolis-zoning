@@ -1,0 +1,28 @@
+ZONING_DATA_JS ANALYSIS
+=======================
+
+Input: C:\Users\cadet\Documents\GitHub\cs2-minneapolis-zoning\visualizer\zoning_data.js
+Datasets: 9
+Total objects: 76307
+GeoJSON exported features: 76307
+
+GLOBAL BBOX
+minLat: 33.5668633
+maxLat: 33.7668123
+minLon: -117.8852239
+maxLon: -117.6503771
+centerLat: 33.666837799999996
+centerLon: -117.76780049999999
+width_m: 21758.29
+height_m: 22258.32
+
+DATASETS
+- DATA_RESIDENTIAL: objects=698, coords=17502, size_m=20974.55 x 21897.8, center=33.6652185,-117.77144215
+- DATA_COMMERCIAL: objects=791, coords=11465, size_m=20582.17 x 18540.96, center=33.66582635,-117.77300679999999
+- DATA_INDUSTRIAL: objects=245, coords=2426, size_m=19802.7 x 17029.63, center=33.674695650000004,-117.7697132
+- DATA_RETAIL: objects=252, coords=3768, size_m=19355.39 x 18724.51, center=33.668071299999994,-117.7655408
+- DATA_PARKING: objects=2073, coords=36820, size_m=19322.49 x 19173.29, center=33.670124,-117.76579705
+- DATA_OFFICE: objects=287, coords=3078, size_m=18358.18 x 18790.99, center=33.669196799999995,-117.7705208
+- DATA_MIXED: objects=0, coords=0, size_m= x , center=,
+- DATA_ROADS: objects=53354, coords=293149, size_m=21757.31 x 21394.19, center=33.6707191,-117.76780049999999
+- DATA_PATHS: objects=18607, coords=173969, size_m=20708.9 x 20758.66, center=33.6680579,-117.76633580000001
