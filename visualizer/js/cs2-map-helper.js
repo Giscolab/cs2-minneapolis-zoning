@@ -6,6 +6,7 @@
   var CS2_HEIGHTMAP_RESAMPLING = "bilinear";
   var CS2_HEIGHTMAP_NORMALIZATION = "nonta-manual";
   var CS2_BASE_LEVEL = 1.000;
+  var CS2_BELOW_SEA_RESERVE_METERS = 80;
   var CS2_ELEVATION_SCALE = 4096;
   var CS2_VERTICAL_SCALE = 2.5;
   var CS2_VALID_MIN_ELEV = -200;
@@ -74,6 +75,7 @@
       "--zoom", quoteArg(14),
       "--heightmap-normalization", quoteArg(CS2_HEIGHTMAP_NORMALIZATION),
       "--cs2-base-level", quoteArg(CS2_BASE_LEVEL),
+      "--below-sea-reserve-meters", quoteArg(CS2_BELOW_SEA_RESERVE_METERS),
       "--cs2-elevation-scale", quoteArg(CS2_ELEVATION_SCALE),
       "--cs2-vertical-scale", quoteArg(CS2_VERTICAL_SCALE),
       "--valid-min-elev", quoteArg(CS2_VALID_MIN_ELEV),
@@ -160,6 +162,7 @@
       "  --zoom " + quoteArg(14) + " `",
       "  --heightmap-normalization " + quoteArg(CS2_HEIGHTMAP_NORMALIZATION) + " `",
       "  --cs2-base-level " + quoteArg(CS2_BASE_LEVEL) + " `",
+      "  --below-sea-reserve-meters " + quoteArg(CS2_BELOW_SEA_RESERVE_METERS) + " `",
       "  --cs2-elevation-scale " + quoteArg(CS2_ELEVATION_SCALE) + " `",
       "  --cs2-vertical-scale " + quoteArg(CS2_VERTICAL_SCALE) + " `",
       "  --valid-min-elev " + quoteArg(CS2_VALID_MIN_ELEV) + " `",
@@ -174,6 +177,10 @@
       "  --heightmap-bbox " + quoteArg(state.heightmapBBoxText) + " `",
       "  --exports-root " + quoteArg("exports\\bundles\\" + suffix) + " `",
       "  --png-dir $pngDir `",
+      "  --cs2-base-level " + quoteArg(CS2_BASE_LEVEL) + " `",
+      "  --below-sea-reserve-meters " + quoteArg(CS2_BELOW_SEA_RESERVE_METERS) + " `",
+      "  --cs2-elevation-scale " + quoteArg(CS2_ELEVATION_SCALE) + " `",
+      "  --cs2-vertical-scale " + quoteArg(CS2_VERTICAL_SCALE) + " `",
       "  --geojson-dir $geoDir `",
       "  --out " + quoteArg(bundle + "\\manifest.json") + " `",
       "  --write-timeline-config `",
@@ -968,3 +975,4 @@
     create: create
   };
 })(window.CS2Zoning = window.CS2Zoning || {});
+

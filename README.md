@@ -207,6 +207,7 @@ python .\tools\export_cs2_pngs.py `
   --zoom 14 `
   --heightmap-normalization nonta-manual `
   --cs2-base-level 1.0 `
+  --below-sea-reserve-meters 80 `
   --cs2-elevation-scale 4096 `
   --cs2-vertical-scale 2.5
 ```
@@ -372,3 +373,29 @@ Les fichiers `*.before-*` sont des instantanés de travail conservés dans le d�
 MIT - voir [LICENSE](LICENSE).
 
 Données cartographiques © contributeurs [OpenStreetMap](https://www.openstreetmap.org/), sous licence [ODbL](https://www.openstreetmap.org/copyright).
+
+## Contrat vertical CS2
+
+Valeurs par défaut :
+
+- baseLevelMeters: 1.0
+- belowSeaReserveMeters: 80.0
+- seaLevelMeters: 1.0
+- elevationScaleMeters: 4096.0
+- verticalScale: 2.5
+- encodedMinElevationMeters: -79.0
+- encodedMaxElevationMeters: 1559.4
+- recommendedCs2WaterLevel: 200.0
+
+Formules :
+
+- encodedMinElevationMeters = seaLevelMeters - belowSeaReserveMeters
+- encodedMaxElevationMeters = encodedMinElevationMeters + elevationScaleMeters / verticalScale
+- recommendedCs2WaterLevel = (seaLevelMeters - encodedMinElevationMeters) * verticalScale
+
+Avec les valeurs par défaut :
+
+- recommendedCs2WaterLevel = 80 * 2.5 = 200
+
+Le joueur ne modifie pas le contrat vertical. Il importe les PNG 4096x4096 dans l'éditeur CS2, puis règle le niveau d'eau conseillé si le bundle en fournit un.
+
