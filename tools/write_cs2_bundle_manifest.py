@@ -348,21 +348,31 @@ def write_json(path: Path, data: dict) -> None:
 
 def build_bundle_index_entry(manifest: dict) -> dict:
     bundle = manifest["bundle"]
+    bundle_id = bundle["id"]
+    city = bundle.get("city") or ""
+    country = bundle.get("country") or ""
+    country_code = bundle.get("countryCode") or country_slug(country, None)
+    recommended_water_level = bundle.get("recommendedCs2WaterLevel")
+
+    display_parts = [part for part in (city, country_code.upper() if country_code else country) if part]
+    display_name = ", ".join(display_parts) if display_parts else bundle_id
 
     return {
-        "id": bundle["id"],
-        "city": bundle["city"],
-        "country": bundle["country"],
-        "countryCode": bundle["countryCode"],
+        "id": bundle_id,
+        "displayName": display_name,
+        "city": city,
+        "country": country,
+        "countryCode": country_code,
         "centerLon": manifest["center"]["lon"],
         "centerLat": manifest["center"]["lat"],
-        "manifestPath": repo_posix_path(manifest["paths"]["bundleManifest"]),
-        "bundlePath": repo_posix_path(manifest["paths"]["bundleDir"]),
-        "recommendedCs2WaterLevel": bundle["recommendedCs2WaterLevel"],
+        "relativePath": bundle_id,
+        "manifestPath": f"{bundle_id}/manifest.json",
+        "bundlePath": bundle_id,
+        "recommendedWaterLevel": recommended_water_level,
+        "recommendedCs2WaterLevel": recommended_water_level,
         "worldmapSizeKm": manifest["worldMap"]["sizeKm"],
         "heightmapSizeKm": manifest["heightmap"]["sizeKm"],
     }
-
 
 def write_bundle_index(repo_root: Path, manifest: dict) -> Path:
     index_path = resolve_repo_path(repo_root, manifest["paths"]["bundleIndex"])
@@ -374,6 +384,7 @@ def write_bundle_index(repo_root: Path, manifest: dict) -> Path:
             raise SystemExit(f"[ERREUR] bundle_index.json invalide : {index_path} ({exc})") from exc
     else:
         data = {
+            "schemaVersion": 1,
             "version": 1,
             "bundles": [],
         }
@@ -391,6 +402,7 @@ def write_bundle_index(repo_root: Path, manifest: dict) -> Path:
     }
     by_id[entry["id"]] = entry
 
+    data["schemaVersion"] = 1
     data["version"] = 1
     data["bundles"] = sorted(
         by_id.values(),
