@@ -3,8 +3,25 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
+import unicodedata
 from pathlib import Path
 
+
+COUNTRY_CODE_ALIASES = {
+    "france": "fr",
+    "republique francaise": "fr",
+    "république française": "fr",
+    "china": "cn",
+    "chine": "cn",
+    "people_s_republic_of_china": "cn",
+    "united states": "us",
+    "united states of america": "us",
+    "usa": "us",
+    "us": "us",
+    "etats unis": "us",
+    "états unis": "us",
+}
 
 
 def round_number(value: float, digits: int) -> float:
@@ -45,8 +62,67 @@ def bbox_text_from_center_size(center_lon: float, center_lat: float, size_km: fl
     return f"{south:.6f},{west:.6f},{north:.6f},{east:.6f}"
 
 
+def strip_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
+def slugify(value: str, fallback: str) -> str:
+    ascii_value = strip_accents(value).lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_value).strip("_")
+    slug = re.sub(r"_+", "_", slug)
+    return slug or fallback
+
+
+def sanitize_bundle_id(value: str) -> str:
+    normalized = strip_accents(value).lower()
+    bundle_id = re.sub(r"[^a-z0-9_.-]+", "_", normalized).strip("_")
+    bundle_id = re.sub(r"_+", "_", bundle_id)
+    return bundle_id or "bundle"
+
+
+def country_slug(country: str, country_code: str | None) -> str:
+    if country_code:
+        return slugify(country_code, "xx")
+
+    key = slugify(country, "")
+    if key in COUNTRY_CODE_ALIASES:
+        return COUNTRY_CODE_ALIASES[key]
+
+    return slugify(country, "xx")
+
+
+def build_bundle_id(
+    *,
+    city: str,
+    country: str,
+    country_code: str | None,
+    center_lon: float,
+    center_lat: float,
+    explicit_bundle_id: str | None,
+) -> str:
+    if explicit_bundle_id:
+        return sanitize_bundle_id(explicit_bundle_id)
+
+    city_part = slugify(city, "city")
+    country_part = country_slug(country, country_code)
+
+    # Contract choisi : ville_pays_lat_lon.
+    # Exemple : los_angeles_us_33.653495_-117.723999
+    return f"{city_part}_{country_part}_{center_lat:.6f}_{center_lon:.6f}"
+
+
 def ps_path(*parts: str) -> str:
-    return ".\\" + "\\".join(part.strip("\\/") for part in parts)
+    return ".\\" + "\\".join(part.strip("\\/") for part in parts if part.strip("\\/"))
+
+
+def repo_posix_path(value: str) -> str:
+    normalized = value.replace("\\", "/")
+
+    if normalized.startswith("./"):
+        normalized = normalized[2:]
+
+    return normalized
 
 
 def build_manifest(args: argparse.Namespace) -> dict:
@@ -67,31 +143,76 @@ def build_manifest(args: argparse.Namespace) -> dict:
     )
 
     exports_root = args.exports_root.strip("\\/")
-    suffix = f"{center_lon}_{center_lat}"
+    city = args.city
+    country = args.country
+    country_code = args.country_code or None
+    world_scale = 1.0
 
-    png_dir = args.png_dir or ps_path(exports_root, f"png_{suffix}")
-    geojson_dir = args.geojson_dir or ps_path(exports_root, f"geojson_{suffix}")
+    if args.legacy_flat_output:
+        suffix = f"{center_lon}_{center_lat}"
 
-    bundle_manifest = args.out or ps_path(
-        exports_root,
-        f"cs2_export_manifest_{suffix}.json",
-    )
+        png_dir = args.png_dir or ps_path(exports_root, f"png_{suffix}")
+        geojson_dir = args.geojson_dir or ps_path(exports_root, f"geojson_{suffix}")
+
+        bundle_id = args.bundle_id or suffix
+        bundle_dir = ps_path(exports_root)
+        bundle_index = ps_path(exports_root, "bundle_index.json")
+        bundle_manifest = args.out or ps_path(
+            exports_root,
+            f"cs2_export_manifest_{suffix}.json",
+        )
+        timeline_config_path = ps_path(
+            exports_root,
+            "timeline_config.json",
+        )
+    else:
+        bundle_root = args.bundle_root.strip("\\/")
+        bundle_id = build_bundle_id(
+            city=city,
+            country=country,
+            country_code=country_code,
+            center_lon=center_lon,
+            center_lat=center_lat,
+            explicit_bundle_id=args.bundle_id,
+        )
+
+        bundle_dir = ps_path(bundle_root, bundle_id)
+        bundle_index = args.bundle_index or ps_path(bundle_root, "bundle_index.json")
+
+        png_dir = args.png_dir or ps_path(bundle_root, bundle_id, "png")
+        geojson_dir = args.geojson_dir or ps_path(bundle_root, bundle_id, "geojson_pack")
+
+        bundle_manifest = args.out or ps_path(
+            bundle_root,
+            bundle_id,
+            "manifest.json",
+        )
+
+        timeline_config_path = args.timeline_config_out or ps_path(
+            bundle_root,
+            bundle_id,
+            "timeline_config.json",
+        )
 
     worldmap_name = f"worldmap_{center_lon}_{center_lat}_{worldmap_km}.png"
     heightmap_name = f"heightmap_{center_lon}_{center_lat}_{heightmap_km}.png"
 
-    timeline_config_path = ps_path(
-        exports_root,
-        "timeline_config.json",
-    )
-
-    world_scale = 1.0
+    recommended_cs2_water_level = args.recommended_cs2_water_level
 
     return {
-        "version": 1,
+        "version": 2,
         "source": "cs2-minneapolis-zoning",
         "kind": "cs2-export-bundle",
-        "city": args.city,
+        "bundle": {
+            "id": bundle_id,
+            "city": city,
+            "country": country,
+            "countryCode": country_slug(country, country_code),
+            "directory": bundle_dir,
+            "recommendedCs2WaterLevel": recommended_cs2_water_level,
+        },
+        "city": city,
+        "country": country,
         "center": {
             "lon": center_lon,
             "lat": center_lat,
@@ -124,9 +245,12 @@ def build_manifest(args: argparse.Namespace) -> dict:
             },
         },
         "paths": {
+            "bundleIndex": bundle_index,
+            "bundleDir": bundle_dir,
             "bundleManifest": bundle_manifest,
             "pngDir": png_dir,
             "geojsonDir": geojson_dir,
+            "timelineConfig": timeline_config_path,
             "worldmapPng": png_dir + "\\" + worldmap_name,
             "heightmapPng": png_dir + "\\" + heightmap_name,
         },
@@ -222,6 +346,65 @@ def write_json(path: Path, data: dict) -> None:
     )
 
 
+def build_bundle_index_entry(manifest: dict) -> dict:
+    bundle = manifest["bundle"]
+
+    return {
+        "id": bundle["id"],
+        "city": bundle["city"],
+        "country": bundle["country"],
+        "countryCode": bundle["countryCode"],
+        "centerLon": manifest["center"]["lon"],
+        "centerLat": manifest["center"]["lat"],
+        "manifestPath": repo_posix_path(manifest["paths"]["bundleManifest"]),
+        "bundlePath": repo_posix_path(manifest["paths"]["bundleDir"]),
+        "recommendedCs2WaterLevel": bundle["recommendedCs2WaterLevel"],
+        "worldmapSizeKm": manifest["worldMap"]["sizeKm"],
+        "heightmapSizeKm": manifest["heightmap"]["sizeKm"],
+    }
+
+
+def write_bundle_index(repo_root: Path, manifest: dict) -> Path:
+    index_path = resolve_repo_path(repo_root, manifest["paths"]["bundleIndex"])
+
+    if index_path.exists():
+        try:
+            data = json.loads(index_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"[ERREUR] bundle_index.json invalide : {index_path} ({exc})") from exc
+    else:
+        data = {
+            "version": 1,
+            "bundles": [],
+        }
+
+    bundles = data.get("bundles")
+    if not isinstance(bundles, list):
+        raise SystemExit(f"[ERREUR] Champ bundles invalide dans : {index_path}")
+
+    entry = build_bundle_index_entry(manifest)
+
+    by_id = {
+        str(item.get("id")): item
+        for item in bundles
+        if isinstance(item, dict) and item.get("id") is not None
+    }
+    by_id[entry["id"]] = entry
+
+    data["version"] = 1
+    data["bundles"] = sorted(
+        by_id.values(),
+        key=lambda item: (
+            str(item.get("country", "")),
+            str(item.get("city", "")),
+            str(item.get("id", "")),
+        ),
+    )
+
+    write_json(index_path, data)
+    return index_path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Write a CS2 export bundle manifest for a generated map center."
@@ -230,6 +413,9 @@ def main() -> int:
     parser.add_argument("--center-lon", type=float, required=True)
     parser.add_argument("--center-lat", type=float, required=True)
     parser.add_argument("--city", default="Zone CS2")
+    parser.add_argument("--country", default="")
+    parser.add_argument("--country-code", default=None)
+    parser.add_argument("--bundle-id", default=None)
 
     parser.add_argument("--worldmap-size-km", type=float, default=57.344)
     parser.add_argument("--heightmap-size-km", type=float, default=14.336)
@@ -247,16 +433,22 @@ def main() -> int:
     parser.add_argument("--below-sea-reserve-meters", type=float, default=0.0)
     parser.add_argument("--cs2-elevation-scale", type=float, default=4096.0)
     parser.add_argument("--cs2-vertical-scale", type=float, default=2.5)
+    parser.add_argument("--recommended-cs2-water-level", type=float, default=None)
 
     parser.add_argument("--world-bbox", default=None)
     parser.add_argument("--heightmap-bbox", default=None)
 
     parser.add_argument("--exports-root", default="exports")
+    parser.add_argument("--bundle-root", default="exports/bundles")
+    parser.add_argument("--bundle-index", default=None)
     parser.add_argument("--png-dir", default=None)
     parser.add_argument("--geojson-dir", default=None)
     parser.add_argument("--out", default=None)
+    parser.add_argument("--timeline-config-out", default=None)
 
     parser.add_argument("--write-timeline-config", action="store_true")
+    parser.add_argument("--skip-bundle-index", action="store_true")
+    parser.add_argument("--legacy-flat-output", action="store_true")
     parser.add_argument("--check-existing", action="store_true")
 
     args = parser.parse_args()
@@ -268,6 +460,7 @@ def main() -> int:
     write_json(out_path, manifest)
 
     print("=== CS2 EXPORT BUNDLE MANIFEST ===")
+    print(f"Bundle ID: {manifest['bundle']['id']}")
     print(f"Manifest : {out_path}")
 
     if args.write_timeline_config:
@@ -281,6 +474,10 @@ def main() -> int:
 
         write_json(timeline_config_path, timeline_config)
         print(f"Timeline : {timeline_config_path}")
+
+    if not args.skip_bundle_index and not args.legacy_flat_output:
+        index_path = write_bundle_index(repo_root, manifest)
+        print(f"Index    : {index_path}")
 
     if args.check_existing:
         return check_existing(repo_root, manifest)
