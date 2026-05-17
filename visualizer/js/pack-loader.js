@@ -1,7 +1,7 @@
 (function (App) {
   "use strict";
 
-  var DEFAULT_PACK_INDEX_PATH = "../exports/bundles/-117.723999_33.653495/geojson_pack/reports/layer_index.json";
+  var DEFAULT_PACK_INDEX_PATH = "../exports/bundles/irvine_ca_us_33.653495_-117.723999/geojson_pack/reports/layer_index.json";
 
   var SOURCE_KEYS = {
     residential: true,

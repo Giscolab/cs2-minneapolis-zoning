@@ -12,6 +12,12 @@
   var CS2_VALID_MIN_ELEV = -200;
   var CS2_VALID_MAX_ELEV = 5000;
 
+  var DEFAULT_BUNDLE_ID = "irvine_ca_us_33.653495_-117.723999";
+  var DEFAULT_BUNDLE_CITY = "Irvine";
+  var DEFAULT_BUNDLE_COUNTRY = "United States";
+  var DEFAULT_BUNDLE_COUNTRY_CODE = "us";
+  var DEFAULT_RECOMMENDED_CS2_WATER_LEVEL = 1.0;
+
   function byId(id) {
     return document.getElementById(id);
   }
@@ -28,26 +34,42 @@
 
   function getCityName(input) {
     var value = input && input.value ? String(input.value).trim() : "";
-    return value || "Zone CS2";
+
+    if (!value || value === "Zone CS2") {
+      return DEFAULT_BUNDLE_CITY;
+    }
+
+    return value;
   }
 
   function quoteArg(value) {
     return '"' + String(value).replace(/"/g, "'") + '"';
   }
 
+  function getDefaultBundleDirPs() {
+    return ".\\exports\\bundles\\" + DEFAULT_BUNDLE_ID;
+  }
+
+  function getDefaultBundlePngDirPs() {
+    return getDefaultBundleDirPs() + "\\png";
+  }
+
+  function getDefaultBundleGeojsonDirPs() {
+    return getDefaultBundleDirPs() + "\\geojson_pack";
+  }
+
   function buildCommand(cityName, bboxText, state) {
     var pythonExe = "C:\\Python314\\python.exe";
     var scriptPath = "C:\\Users\\cadet\\Documents\\GitHub\\cs2-minneapolis-zoning\\src\\extract_zoning.py";
-    var centerLat = roundNumber(state.center.lat, 6);
-    var centerLon = roundNumber(state.center.lng, 6);
-    var outDir = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack";
-
     return [
       "& " + quoteArg(pythonExe),
       quoteArg(scriptPath),
       "--city", quoteArg(cityName),
+      "--country", quoteArg(DEFAULT_BUNDLE_COUNTRY),
+      "--country-code", quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
       "--bbox", quoteArg(bboxText),
-      "--out-dir", quoteArg(outDir),
+      "--bundle-output",
+      "--bundle-id", quoteArg(DEFAULT_BUNDLE_ID),
       "--split-layers"
     ].join(" ");
   }
@@ -60,7 +82,6 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var outDir = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png";
 
     return [
       "& " + quoteArg(pythonExe),
@@ -70,7 +91,11 @@
       "--worldmap-size-km", quoteArg(worldMapKm),
       "--heightmap-size-km", quoteArg(heightmapKm),
       "--pixels", quoteArg(HEIGHTMAP_PIXELS),
-      "--out-dir", quoteArg(outDir),
+      "--bundle-output",
+      "--bundle-id", quoteArg(DEFAULT_BUNDLE_ID),
+      "--city", quoteArg(DEFAULT_BUNDLE_CITY),
+      "--country", quoteArg(DEFAULT_BUNDLE_COUNTRY),
+      "--country-code", quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
       "--provider", quoteArg("maptiler"),
       "--zoom", quoteArg(14),
       "--heightmap-normalization", quoteArg(CS2_HEIGHTMAP_NORMALIZATION),
@@ -88,7 +113,7 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var outDir = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png";
+    var outDir = getDefaultBundlePngDirPs();
 
     return {
       centerLon: centerLon,
@@ -125,9 +150,7 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var suffix = centerLon + "_" + centerLat;
-
-    var bundle = ".\\exports\\bundles\\" + suffix;
+    var bundle = getDefaultBundleDirPs();
     var geoDir = "$bundle\\geojson_pack";
     var pngDir = "$bundle\\png";
 
@@ -136,19 +159,24 @@
       "",
       "$lon = " + quoteArg(centerLon),
       "$lat = " + quoteArg(centerLat),
-      "$suffix = " + quoteArg(suffix),
+      "$bundleId = " + quoteArg(DEFAULT_BUNDLE_ID),
+      "$city = " + quoteArg(DEFAULT_BUNDLE_CITY),
+      "$country = " + quoteArg(DEFAULT_BUNDLE_COUNTRY),
+      "$countryCode = " + quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
       "$bundle = " + quoteArg(bundle),
       "$geoDir = " + quoteArg(geoDir),
       "$pngDir = " + quoteArg(pngDir),
       "",
-      "Remove-Item $bundle -Recurse -Force -ErrorAction SilentlyContinue",
       "New-Item -ItemType Directory -Force $geoDir | Out-Null",
       "New-Item -ItemType Directory -Force $pngDir | Out-Null",
       "",
       "& " + quoteArg(pythonExe) + " " + quoteArg(".\\src\\extract_zoning.py") + " `",
-      "  --city " + quoteArg(cityName) + " `",
+      "  --city $city `",
+      "  --country $country `",
+      "  --country-code $countryCode `",
       "  --bbox " + quoteArg(state.heightmapBBoxText) + " `",
-      "  --out-dir $geoDir `",
+      "  --bundle-output `",
+      "  --bundle-id $bundleId `",
       "  --split-layers",
       "",
       "& " + quoteArg(pythonExe) + " " + quoteArg(".\\tools\\export_cs2_pngs.py") + " `",
@@ -157,7 +185,11 @@
       "  --worldmap-size-km " + quoteArg(worldMapKm) + " `",
       "  --heightmap-size-km " + quoteArg(heightmapKm) + " `",
       "  --pixels " + quoteArg(HEIGHTMAP_PIXELS) + " `",
-      "  --out-dir $pngDir `",
+      "  --bundle-output `",
+      "  --bundle-id $bundleId `",
+      "  --city $city `",
+      "  --country $country `",
+      "  --country-code $countryCode `",
       "  --provider " + quoteArg("maptiler") + " `",
       "  --zoom " + quoteArg(14) + " `",
       "  --heightmap-normalization " + quoteArg(CS2_HEIGHTMAP_NORMALIZATION) + " `",
@@ -171,18 +203,19 @@
       "& " + quoteArg(pythonExe) + " " + quoteArg(".\\tools\\write_cs2_bundle_manifest.py") + " `",
       "  --center-lon $lon `",
       "  --center-lat $lat `",
+      "  --city $city `",
+      "  --country $country `",
+      "  --country-code $countryCode `",
+      "  --bundle-id $bundleId `",
+      "  --recommended-cs2-water-level " + quoteArg(DEFAULT_RECOMMENDED_CS2_WATER_LEVEL) + " `",
       "  --worldmap-size-km " + quoteArg(worldMapKm) + " `",
       "  --heightmap-size-km " + quoteArg(heightmapKm) + " `",
       "  --world-bbox " + quoteArg(state.worldMapBBoxText) + " `",
       "  --heightmap-bbox " + quoteArg(state.heightmapBBoxText) + " `",
-      "  --exports-root " + quoteArg("exports\\bundles\\" + suffix) + " `",
-      "  --png-dir $pngDir `",
       "  --cs2-base-level " + quoteArg(CS2_BASE_LEVEL) + " `",
       "  --below-sea-reserve-meters " + quoteArg(CS2_BELOW_SEA_RESERVE_METERS) + " `",
       "  --cs2-elevation-scale " + quoteArg(CS2_ELEVATION_SCALE) + " `",
       "  --cs2-vertical-scale " + quoteArg(CS2_VERTICAL_SCALE) + " `",
-      "  --geojson-dir $geoDir `",
-      "  --out " + quoteArg(bundle + "\\manifest.json") + " `",
       "  --write-timeline-config `",
       "  --check-existing",
       "",
@@ -246,25 +279,25 @@
         waterAreasGeoJson: "water_areas_clipped.geojson"
       },
       geojsonPack: {
-        outDir: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack",
+        outDir: getDefaultBundleGeojsonDirPs(),
         splitLayers: true,
         bboxSource: "heightmap",
         bbox: state.heightmapBBoxText
       },
       exportBundle: {
-        bundleManifest: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\manifest.json",
-        pngDir: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png",
-        geojsonDir: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack",
-        worldmapPng: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png\\worldmap_" + centerLon + "_" + centerLat + "_" + worldMapKm + ".png",
-        heightmapPng: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png\\heightmap_" + centerLon + "_" + centerLat + "_" + heightmapKm + ".png",
+        bundleManifest: getDefaultBundleDirPs() + "\\manifest.json",
+        pngDir: getDefaultBundlePngDirPs(),
+        geojsonDir: getDefaultBundleGeojsonDirPs(),
+        worldmapPng: getDefaultBundlePngDirPs() + "\\worldmap_" + centerLon + "_" + centerLat + "_" + worldMapKm + ".png",
+        heightmapPng: getDefaultBundlePngDirPs() + "\\heightmap_" + centerLon + "_" + centerLat + "_" + heightmapKm + ".png",
         geojson: {
-          roadsMajor: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\geojson\\roads_major_clipped.geojson",
-          roadsDriveable: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\geojson\\roads_driveable_clipped.geojson",
-          waterLines: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\geojson\\water_lines_clipped.geojson",
-          waterAreas: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\geojson\\water_areas_clipped.geojson",
-          allFeatures: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\geojson\\all_features.geojson",
-          layerIndex: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\reports\\layer_index.json",
-          extractionReport: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack\\reports\\extraction_report.json"
+          roadsMajor: getDefaultBundleGeojsonDirPs() + "\\geojson\\roads_major_clipped.geojson",
+          roadsDriveable: getDefaultBundleGeojsonDirPs() + "\\geojson\\roads_driveable_clipped.geojson",
+          waterLines: getDefaultBundleGeojsonDirPs() + "\\geojson\\water_lines_clipped.geojson",
+          waterAreas: getDefaultBundleGeojsonDirPs() + "\\geojson\\water_areas_clipped.geojson",
+          allFeatures: getDefaultBundleGeojsonDirPs() + "\\geojson\\all_features.geojson",
+          layerIndex: getDefaultBundleGeojsonDirPs() + "\\reports\\layer_index.json",
+          extractionReport: getDefaultBundleGeojsonDirPs() + "\\reports\\extraction_report.json"
         }
       },
       cs2PngPipeline: {
@@ -352,14 +385,24 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var pngDir = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\png";
-    var geojsonDir = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\geojson_pack";
-    var bundleManifest = ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\manifest.json";
+    var pngDir = getDefaultBundlePngDirPs();
+    var geojsonDir = getDefaultBundleGeojsonDirPs();
+    var bundleManifest = getDefaultBundleDirPs() + "\\manifest.json";
 
     return {
       version: 1,
       source: "cs2-minneapolis-zoning",
       kind: "cs2-export-bundle",
+      bundle: {
+        id: DEFAULT_BUNDLE_ID,
+        city: DEFAULT_BUNDLE_CITY,
+        country: DEFAULT_BUNDLE_COUNTRY,
+        countryCode: DEFAULT_BUNDLE_COUNTRY_CODE,
+        directory: getDefaultBundleDirPs(),
+        recommendedCs2WaterLevel: DEFAULT_RECOMMENDED_CS2_WATER_LEVEL
+      },
+      city: DEFAULT_BUNDLE_CITY,
+      country: DEFAULT_BUNDLE_COUNTRY,
       center: {
         lon: centerLon,
         lat: centerLat
@@ -395,7 +438,7 @@
         extractionReport: geojsonDir + "\\reports\\extraction_report.json"
       },
       timelineMod: {
-        configPath: ".\\exports\\bundles\\" + centerLon + "_" + centerLat + "\\timeline_config.json",
+        configPath: getDefaultBundleDirPs() + "\\timeline_config.json",
         useGeoJsonCenter: false,
         originLon: centerLon,
         originLat: centerLat,
