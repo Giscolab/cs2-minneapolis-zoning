@@ -240,6 +240,10 @@
     return [
       "cd " + quoteArg(repoDir),
       "",
+      "if (-not $env:MAPTILER_API_KEY -and -not $env:MAPBOX_TOKEN) {",
+      "  throw " + quoteArg("MAPTILER_API_KEY ou MAPBOX_TOKEN manquant. Définis une clé MapTiler ou Mapbox avant de générer les PNG."),
+      "}",
+      "",
       "$lon = " + quoteArg(centerLon),
       "$lat = " + quoteArg(centerLat),
       "$bundleId = " + quoteArg(bundleMeta.id),
