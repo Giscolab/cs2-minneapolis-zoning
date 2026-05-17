@@ -197,7 +197,25 @@ def build_manifest(args: argparse.Namespace) -> dict:
     worldmap_name = f"worldmap_{center_lon}_{center_lat}_{worldmap_km}.png"
     heightmap_name = f"heightmap_{center_lon}_{center_lat}_{heightmap_km}.png"
 
-    recommended_cs2_water_level = args.recommended_cs2_water_level
+    encoded_min_elevation_meters = round_number(
+        args.cs2_base_level - args.below_sea_reserve_meters,
+        6,
+    )
+    encoded_max_elevation_meters = round_number(
+        args.cs2_base_level - args.below_sea_reserve_meters + args.cs2_elevation_scale / args.cs2_vertical_scale,
+        6,
+    )
+
+    computed_recommended_cs2_water_level = round_number(
+        (args.cs2_base_level - encoded_min_elevation_meters) * args.cs2_vertical_scale,
+        6,
+    )
+
+    recommended_cs2_water_level = (
+        args.recommended_cs2_water_level
+        if args.recommended_cs2_water_level is not None
+        else computed_recommended_cs2_water_level
+    )
 
     return {
         "version": 2,
@@ -244,7 +262,13 @@ def build_manifest(args: argparse.Namespace) -> dict:
                 "cs2HeightScale": args.cs2_elevation_scale,
             },
         },
-        "paths": {
+        "water": {
+            "recommendedCs2WaterLevel": recommended_cs2_water_level,
+            "waterReferenceElevationMeters": args.cs2_base_level,
+            "belowSeaReserveMeters": args.below_sea_reserve_meters,
+            "source": "computed-from-heightmap-normalization",
+            "formula": "(seaLevelMeters - encodedMinElevationMeters) * verticalScale",
+        },        "paths": {
             "bundleIndex": bundle_index,
             "bundleDir": bundle_dir,
             "bundleManifest": bundle_manifest,
@@ -352,7 +376,8 @@ def build_bundle_index_entry(manifest: dict) -> dict:
     city = bundle.get("city") or ""
     country = bundle.get("country") or ""
     country_code = bundle.get("countryCode") or country_slug(country, None)
-    recommended_water_level = bundle.get("recommendedCs2WaterLevel")
+    water = manifest.get("water") or {}
+    recommended_water_level = water.get("recommendedCs2WaterLevel", bundle.get("recommendedCs2WaterLevel"))
 
     display_parts = [part for part in (city, country_code.upper() if country_code else country) if part]
     display_name = ", ".join(display_parts) if display_parts else bundle_id
@@ -442,7 +467,7 @@ def main() -> int:
         choices=("local-minmax", "nonta-manual", "absolute", "absolute-0-scale"),
     )
     parser.add_argument("--cs2-base-level", type=float, default=1.0)
-    parser.add_argument("--below-sea-reserve-meters", type=float, default=0.0)
+    parser.add_argument("--below-sea-reserve-meters", type=float, default=80.0)
     parser.add_argument("--cs2-elevation-scale", type=float, default=4096.0)
     parser.add_argument("--cs2-vertical-scale", type=float, default=2.5)
     parser.add_argument("--recommended-cs2-water-level", type=float, default=None)
