@@ -2,9 +2,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
+
+
+COUNTRY_CODE_ALIASES = {
+    "france": "fr",
+    "republique francaise": "fr",
+    "république française": "fr",
+    "china": "cn",
+    "chine": "cn",
+    "united states": "us",
+    "united states of america": "us",
+    "usa": "us",
+    "us": "us",
+    "etats unis": "us",
+    "états unis": "us",
+}
 
 
 def load_contract(path: str | None) -> dict:
@@ -51,6 +68,54 @@ def bool_pick(args_value: bool, contract: dict, keys: list[str], default: bool =
             return bool(contract[key])
 
     return default
+
+
+def strip_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
+def slugify(value: str, fallback: str) -> str:
+    ascii_value = strip_accents(value).lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_value).strip("_")
+    slug = re.sub(r"_+", "_", slug)
+    return slug or fallback
+
+
+def sanitize_bundle_id(value: str) -> str:
+    normalized = strip_accents(value).lower()
+    bundle_id = re.sub(r"[^a-z0-9_.-]+", "_", normalized).strip("_")
+    bundle_id = re.sub(r"_+", "_", bundle_id)
+    return bundle_id or "bundle"
+
+
+def country_slug(country: str, country_code: str | None) -> str:
+    if country_code:
+        return slugify(country_code, "xx")
+
+    key = slugify(country, "")
+    if key in COUNTRY_CODE_ALIASES:
+        return COUNTRY_CODE_ALIASES[key]
+
+    return slugify(country, "xx")
+
+
+def build_bundle_id(
+    *,
+    city: str | None,
+    country: str | None,
+    country_code: str | None,
+    center_lon: str,
+    center_lat: str,
+    explicit_bundle_id: str | None,
+) -> str:
+    if explicit_bundle_id:
+        return sanitize_bundle_id(explicit_bundle_id)
+
+    city_part = slugify(city or "Zone CS2", "city")
+    country_part = country_slug(country or "", country_code)
+
+    return f"{city_part}_{country_part}_{float(center_lat):.6f}_{float(center_lon):.6f}"
 
 
 def run_command(cmd: list[str], cwd: Path, dry_run: bool) -> None:
@@ -137,6 +202,13 @@ def main() -> int:
 
     parser.add_argument("--contract", default=None)
 
+    parser.add_argument("--bundle-output", action="store_true")
+    parser.add_argument("--bundle-root", default=None)
+    parser.add_argument("--bundle-id", default=None)
+    parser.add_argument("--city", default=None)
+    parser.add_argument("--country", default=None)
+    parser.add_argument("--country-code", default=None)
+
     parser.add_argument("--center-lon", default=None)
     parser.add_argument("--center-lat", default=None)
     parser.add_argument("--worldmap-size-km", default=None)
@@ -208,6 +280,50 @@ def main() -> int:
         ["outDir", "out_dir", "exportsDir"],
         default="exports",
     )
+
+    contract_bundle = contract.get("bundle", {}) if isinstance(contract.get("bundle"), dict) else {}
+
+    bundle_root_str = pick(
+        args.bundle_root,
+        contract,
+        ["bundleRoot", "bundle_root"],
+        default="exports/bundles",
+    )
+    bundle_id = pick(
+        args.bundle_id,
+        contract_bundle,
+        ["id", "bundleId", "bundle_id"],
+        default=None,
+    )
+    city = pick(
+        args.city,
+        contract_bundle,
+        ["city"],
+        default=None,
+    )
+    country = pick(
+        args.country,
+        contract_bundle,
+        ["country"],
+        default=None,
+    )
+    country_code = pick(
+        args.country_code,
+        contract_bundle,
+        ["countryCode", "country_code"],
+        default=None,
+    )
+
+    if args.bundle_output:
+        bundle_id = build_bundle_id(
+            city=city,
+            country=country,
+            country_code=country_code,
+            center_lon=center_lon,
+            center_lat=center_lat,
+            explicit_bundle_id=bundle_id,
+        )
+        out_dir_str = f"{bundle_root_str.strip('\\/')}/{bundle_id}/png"
 
     provider = pick(
         args.provider,
@@ -327,6 +443,9 @@ def main() -> int:
     print(f"heightmapSizeKm   : {heightmap_size_km}")
     print(f"pixels            : {pixels}")
     print(f"outDir            : {out_dir}")
+    if args.bundle_output:
+        print(f"bundleID          : {bundle_id}")
+        print(f"bundleRoot        : {bundle_root_str}")
     print(f"worldmap expected : {worldmap_png}")
     print(f"heightmap expected: {heightmap_png}")
     print(f"heightmap tiles   : {tiles}")
