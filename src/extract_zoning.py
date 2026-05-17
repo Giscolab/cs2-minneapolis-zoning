@@ -9,6 +9,8 @@ Exemples :
 
 import argparse
 import json
+import re
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -64,6 +66,87 @@ WATER_TAG_KEYS = (
     "tunnel",
     "bridge",
 )
+
+
+BUNDLE_COUNTRY_CODE_ALIASES = {
+    "france": "fr",
+    "republique francaise": "fr",
+    "république française": "fr",
+    "china": "cn",
+    "chine": "cn",
+    "united states": "us",
+    "united states of america": "us",
+    "usa": "us",
+    "us": "us",
+    "etats unis": "us",
+    "états unis": "us",
+}
+
+
+def strip_bundle_accents(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
+def slugify_bundle_part(value: str, fallback: str) -> str:
+    ascii_value = strip_bundle_accents(value).lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_value).strip("_")
+    slug = re.sub(r"_+", "_", slug)
+    return slug or fallback
+
+
+def sanitize_bundle_id(value: str) -> str:
+    normalized = strip_bundle_accents(value).lower()
+    bundle_id = re.sub(r"[^a-z0-9_.-]+", "_", normalized).strip("_")
+    bundle_id = re.sub(r"_+", "_", bundle_id)
+    return bundle_id or "bundle"
+
+
+def bundle_country_slug(country: str, country_code: str | None) -> str:
+    if country_code:
+        return slugify_bundle_part(country_code, "xx")
+
+    key = slugify_bundle_part(country, "")
+    if key in BUNDLE_COUNTRY_CODE_ALIASES:
+        return BUNDLE_COUNTRY_CODE_ALIASES[key]
+
+    return slugify_bundle_part(country, "xx")
+
+
+def build_bundle_id(
+    *,
+    city: str,
+    country: str,
+    country_code: str | None,
+    center_lon: float,
+    center_lat: float,
+    explicit_bundle_id: str | None,
+) -> str:
+    if explicit_bundle_id:
+        return sanitize_bundle_id(explicit_bundle_id)
+
+    city_part = slugify_bundle_part(city, "city")
+    country_part = bundle_country_slug(country, country_code)
+
+    return f"{city_part}_{country_part}_{center_lat:.6f}_{center_lon:.6f}"
+
+
+def bbox_center_lon_lat(bbox: str) -> tuple[float, float]:
+    try:
+        south, west, north, east = [float(part.strip()) for part in bbox.split(",")]
+    except ValueError as exc:
+        raise SystemExit(f"[ERREUR] BBOX invalide : {bbox}") from exc
+
+    return ((west + east) / 2.0, (south + north) / 2.0)
+
+
+def build_bundle_geojson_pack_dir(
+    *,
+    bundle_root: str,
+    bundle_id: str,
+) -> Path:
+    project_root = Path(__file__).resolve().parent.parent
+    return project_root / bundle_root.strip("\\/") / bundle_id / "geojson_pack"
 
 
 def build_water_lines_query(bbox: str) -> str:
@@ -500,6 +583,31 @@ def main():
         help="Dossier de sortie du pack GeoJSON scind?. Exemple : ../exports/zone-cs2",
     )
     parser.add_argument(
+        "--bundle-output",
+        action="store_true",
+        help="Exporte le pack GeoJSON dans exports/bundles/<bundle_id>/geojson_pack.",
+    )
+    parser.add_argument(
+        "--bundle-root",
+        default="exports/bundles",
+        help="Dossier racine des bundles si --bundle-output est actif.",
+    )
+    parser.add_argument(
+        "--bundle-id",
+        default=None,
+        help="Identifiant du bundle. Si absent, il est généré depuis ville/pays/centre bbox.",
+    )
+    parser.add_argument(
+        "--country",
+        default="",
+        help="Pays utilisé pour générer le bundle_id si --bundle-output est actif.",
+    )
+    parser.add_argument(
+        "--country-code",
+        default=None,
+        help="Code pays court utilisé pour générer le bundle_id si --bundle-output est actif.",
+    )
+    parser.add_argument(
         "--split-layers",
         action="store_true",
         help="Exporte aussi les couches GeoJSON s?par?es par type.",
@@ -510,12 +618,33 @@ def main():
     bbox = args.bbox
     city = args.city
     out_path = Path(args.out) if args.out else None
-    pack_dir = Path(args.out_dir) if args.out_dir else default_pack_dir(city)
+
+    if args.bundle_output:
+        center_lon, center_lat = bbox_center_lon_lat(bbox)
+        bundle_id = build_bundle_id(
+            city=city,
+            country=args.country,
+            country_code=args.country_code,
+            center_lon=center_lon,
+            center_lat=center_lat,
+            explicit_bundle_id=args.bundle_id,
+        )
+        pack_dir = build_bundle_geojson_pack_dir(
+            bundle_root=args.bundle_root,
+            bundle_id=bundle_id,
+        )
+    else:
+        bundle_id = None
+        pack_dir = Path(args.out_dir) if args.out_dir else default_pack_dir(city)
+
     queries = build_queries(bbox)
 
     print("Extracteur de zonage réel pour CS2 v1.0")
     print(f"Ville / zone : {city}")
     print(f"BBOX         : {bbox}")
+    if args.bundle_output:
+        print(f"Bundle ID    : {bundle_id}")
+        print(f"Bundle root  : {args.bundle_root}")
     print(f"Pack exports : {pack_dir}")
     print(f"Legacy JS    : {out_path if out_path else 'd?sactiv?'}\n")
 
