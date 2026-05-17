@@ -81,8 +81,69 @@
     return getInputValue(context.countryInput, DEFAULT_BUNDLE_COUNTRY);
   }
 
+  function normalizeCountryLookup(value) {
+    return stripAccents(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function resolveCountryCode(value, countryName) {
+    var aliases = {
+      "indonesie": "id",
+      "indonesia": "id",
+      "israel": "il",
+      "tchequie": "cz",
+      "czechia": "cz",
+      "etats unis": "us",
+      "united states": "us",
+      "usa": "us",
+      "france": "fr",
+      "allemagne": "de",
+      "germany": "de",
+      "italie": "it",
+      "italy": "it",
+      "espagne": "es",
+      "spain": "es",
+      "royaume uni": "gb",
+      "united kingdom": "gb",
+      "uk": "gb",
+      "japon": "jp",
+      "japan": "jp",
+      "chine": "cn",
+      "china": "cn",
+      "bresil": "br",
+      "brazil": "br",
+      "mexique": "mx",
+      "mexico": "mx",
+      "australie": "au",
+      "australia": "au",
+      "canada": "ca"
+    };
+
+    var rawCode = String(value || "").trim().toLowerCase();
+
+    if (/^[a-z]{2}$/.test(rawCode)) {
+      return rawCode;
+    }
+
+    var normalizedCode = normalizeCountryLookup(value);
+    if (aliases[normalizedCode]) {
+      return aliases[normalizedCode];
+    }
+
+    var normalizedCountry = normalizeCountryLookup(countryName);
+    if (aliases[normalizedCountry]) {
+      return aliases[normalizedCountry];
+    }
+
+    return slugifyBundlePart(value || countryName, DEFAULT_BUNDLE_COUNTRY_CODE).slice(0, 2);
+  }
+
   function getCountryCode(context) {
-    return getInputValue(context.countryCodeInput, DEFAULT_BUNDLE_COUNTRY_CODE);
+    var rawCode = getInputValue(context.countryCodeInput, "");
+    var country = getCountryName(context);
+    return resolveCountryCode(rawCode, country);
   }
 
   function getRecommendedWaterLevel(context) {
@@ -106,6 +167,9 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var country = getCountryName(context);
     var countryCode = getCountryCode(context);
+    if (context.countryCodeInput && context.countryCodeInput.value !== countryCode) {
+      context.countryCodeInput.value = countryCode;
+    }
     var bundleId = sanitizeBundleId(
       buildDynamicBundleId(cityName, countryCode, centerLon, centerLat)
     );
