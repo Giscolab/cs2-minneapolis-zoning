@@ -240,8 +240,22 @@
     return [
       "cd " + quoteArg(repoDir),
       "",
-      "if (-not $env:MAPTILER_API_KEY -and -not $env:MAPBOX_TOKEN) {",
-      "  throw " + quoteArg("MAPTILER_API_KEY ou MAPBOX_TOKEN manquant. Définis une clé MapTiler ou Mapbox avant de générer les PNG."),
+      "if (-not $env:MAPTILER_API_KEY) {",
+      "  Write-Host " + quoteArg("MAPTILER_API_KEY absent pour cette session PowerShell.") + " -ForegroundColor Yellow",
+      "  Write-Host " + quoteArg("Colle ta clé MapTiler puis appuie sur Entrée.") + " -ForegroundColor Cyan",
+      "",
+      "  $secureKey = Read-Host " + quoteArg("MAPTILER_API_KEY") + " -AsSecureString",
+      "  $plainKey = [System.Net.NetworkCredential]::new(" + quoteArg("") + ", $secureKey).Password",
+      "",
+      "  if ([string]::IsNullOrWhiteSpace($plainKey)) {",
+      "    throw " + quoteArg("MAPTILER_API_KEY vide. Génération annulée."),
+      "  }",
+      "",
+      "  $env:MAPTILER_API_KEY = $plainKey",
+      "",
+      "  Remove-Variable plainKey -ErrorAction SilentlyContinue",
+      "",
+      "  Write-Host " + quoteArg("MAPTILER_API_KEY chargée pour cette session PowerShell.") + " -ForegroundColor Green",
       "}",
       "",
       "$lon = " + quoteArg(centerLon),
@@ -1149,4 +1163,3 @@
     create: create
   };
 })(window.CS2Zoning = window.CS2Zoning || {});
-
