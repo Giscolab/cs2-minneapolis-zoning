@@ -46,35 +46,118 @@
     return '"' + String(value).replace(/"/g, "'") + '"';
   }
 
-  function getDefaultBundleDirPs() {
-    return ".\\exports\\bundles\\" + DEFAULT_BUNDLE_ID;
+  function stripAccents(value) {
+    return String(value || "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "");
   }
 
-  function getDefaultBundlePngDirPs() {
-    return getDefaultBundleDirPs() + "\\png";
+  function slugifyBundlePart(value, fallback) {
+    var slug = stripAccents(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .replace(/_+/g, "_");
+
+    return slug || fallback;
   }
 
-  function getDefaultBundleGeojsonDirPs() {
-    return getDefaultBundleDirPs() + "\\geojson_pack";
+  function sanitizeBundleId(value) {
+    var bundleId = stripAccents(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9_.-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .replace(/_+/g, "_");
+
+    return bundleId || "bundle";
   }
 
-  function buildCommand(cityName, bboxText, state) {
+  function getInputValue(input, fallback) {
+    var value = input && input.value ? String(input.value).trim() : "";
+    return value || fallback;
+  }
+
+  function getCountryName(context) {
+    return getInputValue(context.countryInput, DEFAULT_BUNDLE_COUNTRY);
+  }
+
+  function getCountryCode(context) {
+    return getInputValue(context.countryCodeInput, DEFAULT_BUNDLE_COUNTRY_CODE);
+  }
+
+  function getRecommendedWaterLevel(context) {
+    var raw = getInputValue(context.waterLevelInput, DEFAULT_RECOMMENDED_CS2_WATER_LEVEL);
+    var value = Number(raw);
+
+    return Number.isFinite(value) ? value : DEFAULT_RECOMMENDED_CS2_WATER_LEVEL;
+  }
+
+  function buildDynamicBundleId(cityName, countryCode, centerLon, centerLat) {
+    return [
+      slugifyBundlePart(cityName, "city"),
+      slugifyBundlePart(countryCode, "xx"),
+      formatNumber(centerLat, 6),
+      formatNumber(centerLon, 6)
+    ].join("_");
+  }
+
+  function getBundleMeta(context, state, cityName) {
+    var centerLat = roundNumber(state.center.lat, 6);
+    var centerLon = roundNumber(state.center.lng, 6);
+    var country = getCountryName(context);
+    var countryCode = getCountryCode(context);
+    var bundleId = sanitizeBundleId(
+      buildDynamicBundleId(cityName, countryCode, centerLon, centerLat)
+    );
+    var bundleDir = ".\\exports\\bundles\\" + bundleId;
+
+    return {
+      id: bundleId,
+      city: cityName,
+      country: country,
+      countryCode: countryCode,
+      recommendedCs2WaterLevel: getRecommendedWaterLevel(context),
+      dir: bundleDir,
+      pngDir: bundleDir + "\\png",
+      geojsonDir: bundleDir + "\\geojson_pack"
+    };
+  }
+
+  function getBundleDirPs(bundleMeta) {
+    return bundleMeta.dir;
+  }
+
+  function getBundlePngDirPs(bundleMeta) {
+    return bundleMeta.pngDir;
+  }
+
+  function getBundleGeojsonDirPs(bundleMeta) {
+    return bundleMeta.geojsonDir;
+  }
+
+  function syncBundleUi(context, bundleMeta) {
+    if (context.bundleIdOutput && document.activeElement !== context.bundleIdOutput) {
+      context.bundleIdOutput.value = bundleMeta.id;
+    }
+  }
+
+  function buildCommand(cityName, bboxText, state, bundleMeta) {
     var pythonExe = "C:\\Python314\\python.exe";
     var scriptPath = "C:\\Users\\cadet\\Documents\\GitHub\\cs2-minneapolis-zoning\\src\\extract_zoning.py";
     return [
       "& " + quoteArg(pythonExe),
       quoteArg(scriptPath),
       "--city", quoteArg(cityName),
-      "--country", quoteArg(DEFAULT_BUNDLE_COUNTRY),
-      "--country-code", quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
+      "--country", quoteArg(bundleMeta.country),
+      "--country-code", quoteArg(bundleMeta.countryCode),
       "--bbox", quoteArg(bboxText),
       "--bundle-output",
-      "--bundle-id", quoteArg(DEFAULT_BUNDLE_ID),
+      "--bundle-id", quoteArg(bundleMeta.id),
       "--split-layers"
     ].join(" ");
   }
 
-  function buildCs2PngPipelineCommand(state) {
+  function buildCs2PngPipelineCommand(state, bundleMeta) {
     var pythonExe = "C:\\Python314\\python.exe";
     var scriptPath = "C:\\Users\\cadet\\Documents\\GitHub\\cs2-minneapolis-zoning\\tools\\export_cs2_pngs.py";
 
@@ -92,10 +175,10 @@
       "--heightmap-size-km", quoteArg(heightmapKm),
       "--pixels", quoteArg(HEIGHTMAP_PIXELS),
       "--bundle-output",
-      "--bundle-id", quoteArg(DEFAULT_BUNDLE_ID),
-      "--city", quoteArg(DEFAULT_BUNDLE_CITY),
-      "--country", quoteArg(DEFAULT_BUNDLE_COUNTRY),
-      "--country-code", quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
+      "--bundle-id", quoteArg(bundleMeta.id),
+      "--city", quoteArg(bundleMeta.city),
+      "--country", quoteArg(bundleMeta.country),
+      "--country-code", quoteArg(bundleMeta.countryCode),
       "--provider", quoteArg("maptiler"),
       "--zoom", quoteArg(14),
       "--heightmap-normalization", quoteArg(CS2_HEIGHTMAP_NORMALIZATION),
@@ -108,12 +191,12 @@
     ].join(" ");
   }
 
-  function buildCs2PngContract(state) {
+  function buildCs2PngContract(state, bundleMeta) {
     var centerLat = roundNumber(state.center.lat, 6);
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var outDir = getDefaultBundlePngDirPs();
+    var outDir = getBundlePngDirPs(bundleMeta);
 
     return {
       centerLon: centerLon,
@@ -142,7 +225,7 @@
     return Math.round(Number(value) * factor) / factor;
   }
 
-  function buildFullBundleCommand(cityName, state) {
+  function buildFullBundleCommand(cityName, state, bundleMeta) {
     var pythonExe = "C:\\Python314\\python.exe";
     var repoDir = "C:\\Users\\cadet\\Documents\\GitHub\\cs2-minneapolis-zoning";
 
@@ -150,7 +233,7 @@
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var bundle = getDefaultBundleDirPs();
+    var bundle = getBundleDirPs(bundleMeta);
     var geoDir = "$bundle\\geojson_pack";
     var pngDir = "$bundle\\png";
 
@@ -159,10 +242,10 @@
       "",
       "$lon = " + quoteArg(centerLon),
       "$lat = " + quoteArg(centerLat),
-      "$bundleId = " + quoteArg(DEFAULT_BUNDLE_ID),
-      "$city = " + quoteArg(DEFAULT_BUNDLE_CITY),
-      "$country = " + quoteArg(DEFAULT_BUNDLE_COUNTRY),
-      "$countryCode = " + quoteArg(DEFAULT_BUNDLE_COUNTRY_CODE),
+      "$bundleId = " + quoteArg(bundleMeta.id),
+      "$city = " + quoteArg(bundleMeta.city),
+      "$country = " + quoteArg(bundleMeta.country),
+      "$countryCode = " + quoteArg(bundleMeta.countryCode),
       "$bundle = " + quoteArg(bundle),
       "$geoDir = " + quoteArg(geoDir),
       "$pngDir = " + quoteArg(pngDir),
@@ -207,7 +290,7 @@
       "  --country $country `",
       "  --country-code $countryCode `",
       "  --bundle-id $bundleId `",
-      "  --recommended-cs2-water-level " + quoteArg(DEFAULT_RECOMMENDED_CS2_WATER_LEVEL) + " `",
+      "  --recommended-cs2-water-level " + quoteArg(bundleMeta.recommendedCs2WaterLevel) + " `",
       "  --worldmap-size-km " + quoteArg(worldMapKm) + " `",
       "  --heightmap-size-km " + quoteArg(heightmapKm) + " `",
       "  --world-bbox " + quoteArg(state.worldMapBBoxText) + " `",
@@ -230,13 +313,13 @@
       "tree $bundle /F"
     ].join("\n");
   }
-  function buildTimelineManifest(cityName, state, command) {
+  function buildTimelineManifest(cityName, state, command, bundleMeta) {
     var centerLat = roundNumber(state.center.lat, 6);
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var cs2PngContract = buildCs2PngContract(state);
-    var cs2PngPipelineCommand = buildCs2PngPipelineCommand(state);
+    var cs2PngContract = buildCs2PngContract(state, bundleMeta);
+    var cs2PngPipelineCommand = buildCs2PngPipelineCommand(state, bundleMeta);
     var worldScale = CS2_WORLD_SCALE;
 
     var manifest = {
@@ -279,25 +362,25 @@
         waterAreasGeoJson: "water_areas_clipped.geojson"
       },
       geojsonPack: {
-        outDir: getDefaultBundleGeojsonDirPs(),
+        outDir: getBundleGeojsonDirPs(bundleMeta),
         splitLayers: true,
         bboxSource: "heightmap",
         bbox: state.heightmapBBoxText
       },
       exportBundle: {
-        bundleManifest: getDefaultBundleDirPs() + "\\manifest.json",
-        pngDir: getDefaultBundlePngDirPs(),
-        geojsonDir: getDefaultBundleGeojsonDirPs(),
-        worldmapPng: getDefaultBundlePngDirPs() + "\\worldmap_" + centerLon + "_" + centerLat + "_" + worldMapKm + ".png",
-        heightmapPng: getDefaultBundlePngDirPs() + "\\heightmap_" + centerLon + "_" + centerLat + "_" + heightmapKm + ".png",
+        bundleManifest: getBundleDirPs(bundleMeta) + "\\manifest.json",
+        pngDir: getBundlePngDirPs(bundleMeta),
+        geojsonDir: getBundleGeojsonDirPs(bundleMeta),
+        worldmapPng: getBundlePngDirPs(bundleMeta) + "\\worldmap_" + centerLon + "_" + centerLat + "_" + worldMapKm + ".png",
+        heightmapPng: getBundlePngDirPs(bundleMeta) + "\\heightmap_" + centerLon + "_" + centerLat + "_" + heightmapKm + ".png",
         geojson: {
-          roadsMajor: getDefaultBundleGeojsonDirPs() + "\\geojson\\roads_major_clipped.geojson",
-          roadsDriveable: getDefaultBundleGeojsonDirPs() + "\\geojson\\roads_driveable_clipped.geojson",
-          waterLines: getDefaultBundleGeojsonDirPs() + "\\geojson\\water_lines_clipped.geojson",
-          waterAreas: getDefaultBundleGeojsonDirPs() + "\\geojson\\water_areas_clipped.geojson",
-          allFeatures: getDefaultBundleGeojsonDirPs() + "\\geojson\\all_features.geojson",
-          layerIndex: getDefaultBundleGeojsonDirPs() + "\\reports\\layer_index.json",
-          extractionReport: getDefaultBundleGeojsonDirPs() + "\\reports\\extraction_report.json"
+          roadsMajor: getBundleGeojsonDirPs(bundleMeta) + "\\geojson\\roads_major_clipped.geojson",
+          roadsDriveable: getBundleGeojsonDirPs(bundleMeta) + "\\geojson\\roads_driveable_clipped.geojson",
+          waterLines: getBundleGeojsonDirPs(bundleMeta) + "\\geojson\\water_lines_clipped.geojson",
+          waterAreas: getBundleGeojsonDirPs(bundleMeta) + "\\geojson\\water_areas_clipped.geojson",
+          allFeatures: getBundleGeojsonDirPs(bundleMeta) + "\\geojson\\all_features.geojson",
+          layerIndex: getBundleGeojsonDirPs(bundleMeta) + "\\reports\\layer_index.json",
+          extractionReport: getBundleGeojsonDirPs(bundleMeta) + "\\reports\\extraction_report.json"
         }
       },
       cs2PngPipeline: {
@@ -313,8 +396,8 @@
     return JSON.stringify(manifest, null, 2);
   }
 
-  function buildCs2PngContractText(state) {
-    return JSON.stringify(buildCs2PngContract(state), null, 2);
+  function buildCs2PngContractText(state, bundleMeta) {
+    return JSON.stringify(buildCs2PngContract(state, bundleMeta), null, 2);
   }
 
   function ensureCs2PngContractUi(context) {
@@ -380,29 +463,29 @@
       flashButton(downloadButton, "Téléchargé");
     });
   }
-  function buildExportBundleManifest(state) {
+  function buildExportBundleManifest(state, bundleMeta) {
     var centerLat = roundNumber(state.center.lat, 6);
     var centerLon = roundNumber(state.center.lng, 6);
     var worldMapKm = roundNumber(state.worldMapSizeKm, 3);
     var heightmapKm = roundNumber(state.heightmapSizeKm, 3);
-    var pngDir = getDefaultBundlePngDirPs();
-    var geojsonDir = getDefaultBundleGeojsonDirPs();
-    var bundleManifest = getDefaultBundleDirPs() + "\\manifest.json";
+    var pngDir = getBundlePngDirPs(bundleMeta);
+    var geojsonDir = getBundleGeojsonDirPs(bundleMeta);
+    var bundleManifest = getBundleDirPs(bundleMeta) + "\\manifest.json";
 
     return {
       version: 1,
       source: "cs2-minneapolis-zoning",
       kind: "cs2-export-bundle",
       bundle: {
-        id: DEFAULT_BUNDLE_ID,
-        city: DEFAULT_BUNDLE_CITY,
-        country: DEFAULT_BUNDLE_COUNTRY,
-        countryCode: DEFAULT_BUNDLE_COUNTRY_CODE,
-        directory: getDefaultBundleDirPs(),
-        recommendedCs2WaterLevel: DEFAULT_RECOMMENDED_CS2_WATER_LEVEL
+        id: bundleMeta.id,
+        city: bundleMeta.city,
+        country: bundleMeta.country,
+        countryCode: bundleMeta.countryCode,
+        directory: getBundleDirPs(bundleMeta),
+        recommendedCs2WaterLevel: bundleMeta.recommendedCs2WaterLevel
       },
-      city: DEFAULT_BUNDLE_CITY,
-      country: DEFAULT_BUNDLE_COUNTRY,
+      city: bundleMeta.city,
+      country: bundleMeta.country,
       center: {
         lon: centerLon,
         lat: centerLat
@@ -438,7 +521,7 @@
         extractionReport: geojsonDir + "\\reports\\extraction_report.json"
       },
       timelineMod: {
-        configPath: getDefaultBundleDirPs() + "\\timeline_config.json",
+        configPath: getBundleDirPs(bundleMeta) + "\\timeline_config.json",
         useGeoJsonCenter: false,
         originLon: centerLon,
         originLat: centerLat,
@@ -462,8 +545,8 @@
     };
   }
 
-  function buildExportBundleManifestText(state) {
-    return JSON.stringify(buildExportBundleManifest(state), null, 2);
+  function buildExportBundleManifestText(state, bundleMeta) {
+    return JSON.stringify(buildExportBundleManifest(state, bundleMeta), null, 2);
   }
 
   function ensureExportBundleUi(context) {
@@ -607,12 +690,13 @@
   function update(context, state) {
     var zoom = context.map.getZoom();
     var cityName = getCityName(context.cityInput);
-    var command = buildCommand(cityName, state.heightmapBBoxText, state);
-    var fullBundleCommand = buildFullBundleCommand(cityName, state);
-    var timelineManifest = buildTimelineManifest(cityName, state, command);
+    var bundleMeta = getBundleMeta(context, state, cityName);
+    var command = buildCommand(cityName, state.heightmapBBoxText, state, bundleMeta);
+    var fullBundleCommand = buildFullBundleCommand(cityName, state, bundleMeta);
+    var timelineManifest = buildTimelineManifest(cityName, state, command, bundleMeta);
     var timelineConfig = buildTimelineConfig(state);
-    var cs2PngContract = buildCs2PngContractText(state);
-    var exportBundleManifest = buildExportBundleManifestText(state);
+    var cs2PngContract = buildCs2PngContractText(state, bundleMeta);
+    var exportBundleManifest = buildExportBundleManifestText(state, bundleMeta);
 
     context.currentWorldBBox = state.worldMapBBoxText;
     context.currentHeightmapBBox = state.heightmapBBoxText;
@@ -624,6 +708,7 @@
     context.currentExportBundleManifest = exportBundleManifest;
 
     syncInputs(context, state);
+    syncBundleUi(context, bundleMeta);
     setText(context.latOutput, formatNumber(state.center.lat, 6));
     setText(context.lonOutput, formatNumber(state.center.lng, 6));
     setText(context.zoomOutput, formatNumber(zoom, 2));
@@ -876,6 +961,18 @@
     context.cityInput.addEventListener("input", function () {
       updateFromController(context);
     });
+
+    context.countryInput.addEventListener("input", function () {
+      updateFromController(context);
+    });
+
+    context.countryCodeInput.addEventListener("input", function () {
+      updateFromController(context);
+    });
+
+    context.waterLevelInput.addEventListener("input", function () {
+      updateFromController(context);
+    });
   }
 
   function bindMoveButtons(context) {
@@ -886,6 +983,27 @@
     context.syncCenter.addEventListener("click", context.overlayController.syncWithMapCenter);
     context.fitOverlay.addEventListener("click", context.overlayController.centerViewOnOverlay);
   }
+
+  function bindLocationEvents(context) {
+    window.addEventListener("cs2zoning:location-selected", function (event) {
+      var detail = event && event.detail ? event.detail : {};
+
+      if (detail.city && context.cityInput) {
+        context.cityInput.value = detail.city;
+      }
+
+      if (detail.country && context.countryInput) {
+        context.countryInput.value = detail.country;
+      }
+
+      if (detail.countryCode && context.countryCodeInput) {
+        context.countryCodeInput.value = detail.countryCode;
+      }
+
+      updateFromController(context);
+    });
+  }
+
 
   function bindCopyButtons(context) {
     context.copyWorldBBox.addEventListener("click", function () {
@@ -940,6 +1058,7 @@
 
     bindSizeInputs(context);
     bindMoveButtons(context);
+    bindLocationEvents(context);
     bindCopyButtons(context);
   }
 
@@ -951,6 +1070,10 @@
       overlayController: overlayController,
       status: byId("cs2-helper-status"),
       cityInput: byId("cs2-helper-city"),
+      countryInput: byId("cs2-helper-country"),
+      countryCodeInput: byId("cs2-helper-country-code"),
+      waterLevelInput: byId("cs2-helper-water-level"),
+      bundleIdOutput: byId("cs2-helper-bundle-id"),
       worldSizeInput: byId("cs2-helper-size"),
       heightmapSizeInput: byId("cs2-helper-heightmap-size"),
       stepSelect: byId("cs2-helper-step"),
@@ -984,6 +1107,10 @@
     if (!context.map ||
       !context.overlayController ||
       !context.cityInput ||
+      !context.countryInput ||
+      !context.countryCodeInput ||
+      !context.waterLevelInput ||
+      !context.bundleIdOutput ||
       !context.worldSizeInput ||
       !context.heightmapSizeInput ||
       !context.stepSelect ||
