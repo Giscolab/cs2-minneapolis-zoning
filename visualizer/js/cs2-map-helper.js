@@ -5,10 +5,11 @@
   var HEIGHTMAP_PIXELS = 4096;
   var CS2_HEIGHTMAP_RESAMPLING = "bilinear";
   var CS2_HEIGHTMAP_NORMALIZATION = "nonta-manual";
-  var CS2_BASE_LEVEL = 1.000;
-  var CS2_BELOW_SEA_RESERVE_METERS = 80;
+  var CS2_DEFAULT_SEA_LEVEL = 511.7;
+  var CS2_BASE_LEVEL = 0.000;
   var CS2_ELEVATION_SCALE = 4096;
   var CS2_VERTICAL_SCALE = 2.5;
+  var CS2_BELOW_SEA_RESERVE_METERS = CS2_DEFAULT_SEA_LEVEL / CS2_VERTICAL_SCALE;
   var CS2_VALID_MIN_ELEV = -200;
   var CS2_VALID_MAX_ELEV = 5000;
 
@@ -16,7 +17,7 @@
   var DEFAULT_BUNDLE_CITY = "Irvine";
   var DEFAULT_BUNDLE_COUNTRY = "United States";
   var DEFAULT_BUNDLE_COUNTRY_CODE = "us";
-  var DEFAULT_RECOMMENDED_CS2_WATER_LEVEL = 1.0;
+  var DEFAULT_RECOMMENDED_CS2_WATER_LEVEL = CS2_DEFAULT_SEA_LEVEL;
 
   function byId(id) {
     return document.getElementById(id);
@@ -273,6 +274,7 @@
       zoom: 14,
       heightmapNormalization: CS2_HEIGHTMAP_NORMALIZATION,
       cs2BaseLevel: CS2_BASE_LEVEL,
+      belowSeaReserveMeters: CS2_BELOW_SEA_RESERVE_METERS,
       cs2ElevationScale: CS2_ELEVATION_SCALE,
       cs2VerticalScale: CS2_VERTICAL_SCALE,
       validMinElev: CS2_VALID_MIN_ELEV,
@@ -372,7 +374,6 @@
       "  --country $country `",
       "  --country-code $countryCode `",
       "  --bundle-id $bundleId `",
-      "  --recommended-cs2-water-level " + quoteArg(bundleMeta.recommendedCs2WaterLevel) + " `",
       "  --worldmap-size-km " + quoteArg(worldMapKm) + " `",
       "  --heightmap-size-km " + quoteArg(heightmapKm) + " `",
       "  --world-bbox " + quoteArg(state.worldMapBBoxText) + " `",

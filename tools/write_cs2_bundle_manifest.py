@@ -125,6 +125,9 @@ def repo_posix_path(value: str) -> str:
     return normalized
 
 
+CS2_DEFAULT_SEA_LEVEL = 511.7
+
+
 def build_manifest(args: argparse.Namespace) -> dict:
     center_lon = round_number(args.center_lon, 6)
     center_lat = round_number(args.center_lat, 6)
@@ -267,8 +270,10 @@ def build_manifest(args: argparse.Namespace) -> dict:
             "waterReferenceElevationMeters": args.cs2_base_level,
             "belowSeaReserveMeters": args.below_sea_reserve_meters,
             "source": "computed-from-heightmap-normalization",
+            "targetCs2WaterLevel": CS2_DEFAULT_SEA_LEVEL,
             "formula": "(seaLevelMeters - encodedMinElevationMeters) * verticalScale",
-        },        "paths": {
+        },
+        "paths": {
             "bundleIndex": bundle_index,
             "bundleDir": bundle_dir,
             "bundleManifest": bundle_manifest,
@@ -466,8 +471,8 @@ def main() -> int:
         default="nonta-manual",
         choices=("local-minmax", "nonta-manual", "absolute", "absolute-0-scale"),
     )
-    parser.add_argument("--cs2-base-level", type=float, default=1.0)
-    parser.add_argument("--below-sea-reserve-meters", type=float, default=80.0)
+    parser.add_argument("--cs2-base-level", type=float, default=0.0)
+    parser.add_argument("--below-sea-reserve-meters", type=float, default=None)
     parser.add_argument("--cs2-elevation-scale", type=float, default=4096.0)
     parser.add_argument("--cs2-vertical-scale", type=float, default=2.5)
     parser.add_argument("--recommended-cs2-water-level", type=float, default=None)
@@ -489,6 +494,9 @@ def main() -> int:
     parser.add_argument("--check-existing", action="store_true")
 
     args = parser.parse_args()
+
+    if args.below_sea_reserve_meters is None:
+        args.below_sea_reserve_meters = CS2_DEFAULT_SEA_LEVEL / args.cs2_vertical_scale
 
     repo_root = Path(__file__).resolve().parents[1]
     manifest = build_manifest(args)

@@ -172,6 +172,9 @@ def resample_elevation_from_tiles(
     return out
 
 
+CS2_DEFAULT_SEA_LEVEL = 511.7
+
+
 def write_png16_nonta(
     arr: np.ndarray,
     out_png: Path,
@@ -216,14 +219,17 @@ def main() -> int:
     parser.add_argument("--out", required=True)
     parser.add_argument("--retries", type=int, default=4)
 
-    parser.add_argument("--cs2-base-level", type=float, default=1.0)
-    parser.add_argument("--below-sea-reserve-meters", type=float, default=0.0)
+    parser.add_argument("--cs2-base-level", type=float, default=0.0)
+    parser.add_argument("--below-sea-reserve-meters", type=float, default=None)
     parser.add_argument("--cs2-elevation-scale", type=float, default=4096.0)
     parser.add_argument("--cs2-vertical-scale", type=float, default=2.5)
     parser.add_argument("--valid-min-elev", type=float, default=-200.0)
     parser.add_argument("--valid-max-elev", type=float, default=5000.0)
 
     args = parser.parse_args()
+
+    if args.below_sea_reserve_meters is None:
+        args.below_sea_reserve_meters = CS2_DEFAULT_SEA_LEVEL / args.cs2_vertical_scale
 
     token = args.token
     if not token:

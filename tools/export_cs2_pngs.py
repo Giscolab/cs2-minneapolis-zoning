@@ -131,6 +131,9 @@ def run_command(cmd: list[str], cwd: Path, dry_run: bool) -> None:
         raise SystemExit(completed.returncode)
 
 
+CS2_DEFAULT_SEA_LEVEL = 511.7
+
+
 def write_resolved_contract(
     out_dir: Path,
     center_lon: str,
@@ -393,13 +396,13 @@ def main() -> int:
         args.cs2_base_level,
         contract.get("heightmap", {}).get("normalization", {}) if isinstance(contract.get("heightmap"), dict) else contract,
         ["baseLevelMeters", "baseLevel", "cs2BaseLevel"],
-        default="1.000",
+        default="0.000",
     )
     below_sea_reserve_meters = pick(
         args.below_sea_reserve_meters,
         contract.get("heightmap", {}).get("normalization", {}) if isinstance(contract.get("heightmap"), dict) else contract,
         ["belowSeaReserveMeters", "belowSeaReserve", "below_sea_reserve_meters"],
-        default="0",
+        default=None,
     )
 
     cs2_elevation_scale = pick(
@@ -414,6 +417,9 @@ def main() -> int:
         ["verticalScale", "cs2VerticalScale"],
         default="2.5",
     )
+
+    if below_sea_reserve_meters is None:
+        below_sea_reserve_meters = str(round(CS2_DEFAULT_SEA_LEVEL / float(cs2_vertical_scale), 6))
 
     resolved_contract_path = write_resolved_contract(
         out_dir=out_dir,
