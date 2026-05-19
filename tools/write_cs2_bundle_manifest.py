@@ -474,7 +474,7 @@ def main() -> int:
     parser.add_argument("--cs2-base-level", type=float, default=0.0)
     parser.add_argument("--below-sea-reserve-meters", type=float, default=None)
     parser.add_argument("--cs2-elevation-scale", type=float, default=4096.0)
-    parser.add_argument("--cs2-vertical-scale", type=float, default=2.5)
+    parser.add_argument("--cs2-vertical-scale", type=float, default=1.0)
     parser.add_argument("--recommended-cs2-water-level", type=float, default=None)
 
     parser.add_argument("--world-bbox", default=None)

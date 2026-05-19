@@ -415,7 +415,7 @@ def main() -> int:
         args.cs2_vertical_scale,
         contract.get("heightmap", {}).get("normalization", {}) if isinstance(contract.get("heightmap"), dict) else contract,
         ["verticalScale", "cs2VerticalScale"],
-        default="2.5",
+        default="1.0",
     )
 
     if below_sea_reserve_meters is None:
